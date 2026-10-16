@@ -1,0 +1,1221 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b0914">
+<meta name="description" content="原創鏡界場景的威爾第二階段走位訓練小遊戲。">
+<title>鏡界裂痕｜第二階段走位訓練器</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0b0914;
+    --panel: #171326;
+    --panel-2: #211b35;
+    --panel-3: #29233e;
+    --line: rgba(183, 159, 229, .18);
+    --line-strong: rgba(183, 159, 229, .35);
+    --text: #f4f1ff;
+    --muted: #b5aec9;
+    --purple: #a78bfa;
+    --purple-deep: #7153b8;
+    --cyan: #66d9e8;
+    --safe: #7ddcc5;
+    --danger: #ff6d8d;
+    --warning: #f6c979;
+    --radius: 16px;
+    --shadow: 0 18px 48px rgba(0, 0, 0, .28);
+  }
+  * { box-sizing: border-box; }
+  html { min-width: 320px; background: var(--bg); }
+  body {
+    margin: 0; min-height: 100vh; color: var(--text);
+    font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif;
+    background:
+      radial-gradient(ellipse at 10% 0%, rgba(113,83,184,.18), transparent 34rem),
+      radial-gradient(ellipse at 100% 34%, rgba(66,95,145,.13), transparent 32rem),
+      var(--bg);
+  }
+  button, select, input { font: inherit; }
+  button { cursor: pointer; }
+  button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+  .site-header { width: min(1440px, 100%); margin: 0 auto; padding: 22px 26px 16px; display: flex; align-items: center; gap: 16px; }
+  .brand-mark { flex: 0 0 46px; width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: linear-gradient(145deg, #3a2b63, #171326); border: 1px solid rgba(190,167,255,.3); box-shadow: inset 0 1px rgba(255,255,255,.08), 0 6px 22px rgba(95,64,160,.18); font-size: 24px; }
+  .brand-copy { min-width: 0; flex: 1; }
+  .brand-copy h1 { margin: 0; font-size: clamp(20px, 2.5vw, 27px); line-height: 1.2; letter-spacing: .04em; font-weight: 850; }
+  .brand-copy p { margin: 5px 0 0; color: var(--muted); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; }
+  .header-actions { display: flex; gap: 8px; }
+  .icon-button, .button { border: 1px solid var(--line-strong); background: rgba(36,29,55,.86); color: var(--text); border-radius: 10px; min-height: 40px; padding: 9px 13px; transition: background .15s ease, transform .15s ease, border-color .15s ease; }
+  .icon-button { min-width: 42px; font-size: 16px; }
+  .icon-button:hover, .button:hover { background: #33274d; border-color: rgba(190,167,255,.55); }
+  .button:active, .icon-button:active { transform: translateY(1px); }
+  .button.primary { background: linear-gradient(135deg, #8768d6, #6449ac); border-color: #a892ef; box-shadow: 0 7px 22px rgba(109,76,190,.18); }
+  .button.primary:hover { background: linear-gradient(135deg, #9b7de8, #7256bc); }
+  .button.danger { border-color: rgba(255,109,141,.32); color: #ff9cb0; background: rgba(97,31,57,.35); }
+  .button.quiet { background: transparent; }
+  .button:disabled { opacity: .42; cursor: not-allowed; }
+  .page-wrap { width: min(1440px, 100%); padding: 0 26px 34px; margin: 0 auto; }
+  .intro-strip { border: 1px solid var(--line); background: linear-gradient(105deg, rgba(34,27,55,.83), rgba(20,17,32,.74)); border-radius: 14px; padding: 12px 16px; display: flex; gap: 13px; align-items: center; margin-bottom: 16px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+  .intro-icon { color: var(--warning); font-size: 17px; }
+  .intro-strip strong { color: var(--text); }
+  .game-layout { display: grid; grid-template-columns: minmax(0, 1fr) 308px; gap: 16px; align-items: start; }
+  .game-column { min-width: 0; }
+  .panel { background: linear-gradient(155deg, rgba(28,23,45,.96), rgba(19,16,31,.98)); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .stage-topbar { display: flex; gap: 14px; align-items: center; justify-content: space-between; padding: 15px 17px 14px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.015); }
+  .stage-title { min-width: 0; }
+  .eyebrow { font-size: 10px; color: var(--purple); font-weight: 800; letter-spacing: .17em; text-transform: uppercase; }
+  .stage-title h2 { margin: 4px 0 0; font-size: 17px; letter-spacing: .025em; }
+  .phase-chip { white-space: nowrap; padding: 6px 10px; border: 1px solid rgba(167,139,250,.27); background: rgba(113,83,184,.13); border-radius: 999px; color: #d5c5ff; font-size: 11px; }
+  .hud-row { padding: 12px 15px; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; border-bottom: 1px solid var(--line); }
+  .hud-stat { min-width: 0; padding: 8px 10px; background: rgba(255,255,255,.025); border: 1px solid rgba(183,159,229,.09); border-radius: 10px; }
+  .hud-stat span { display: block; color: var(--muted); font-size: 11px; }
+  .hud-stat strong { display: block; margin-top: 4px; font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hud-stat strong.timer { color: var(--warning); }
+  .hud-stat strong.lives { color: #ff8da7; letter-spacing: .06em; }
+  .canvas-wrap { position: relative; width: 100%; background: #0b0914; isolation: isolate; }
+  #gameCanvas { display: block; width: 100%; height: auto; aspect-ratio: 1000 / 560; touch-action: manipulation; background: #100c1c; }
+  .game-overlay { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; padding: 18px; background: rgba(7,5,14,.54); backdrop-filter: blur(5px); }
+  .game-overlay[hidden] { display: none; }
+  .overlay-card { width: min(410px, 100%); padding: 23px 22px; border: 1px solid rgba(190,167,255,.36); background: linear-gradient(145deg, rgba(31,24,51,.97), rgba(14,12,24,.98)); border-radius: 17px; box-shadow: 0 24px 70px rgba(0,0,0,.44); text-align: center; }
+  .overlay-kicker { color: var(--cyan); font-size: 10px; font-weight: 800; letter-spacing: .18em; }
+  .overlay-card h3 { margin: 8px 0; font-size: 24px; }
+  .overlay-card p { color: var(--muted); font-size: 13px; line-height: 1.75; margin: 0 0 15px; }
+  .overlay-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+  .overlay-results { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 16px 0; }
+  .overlay-result { padding: 10px 6px; border-radius: 10px; background: rgba(255,255,255,.035); border: 1px solid var(--line); }
+  .overlay-result span { display: block; font-size: 11px; color: var(--muted); }
+  .overlay-result strong { display: block; margin-top: 4px; font-size: 19px; }
+  .stage-footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 15px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+  .key-hints { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--text); padding: 3px 6px; background: rgba(255,255,255,.06); border: 1px solid rgba(190,167,255,.2); border-radius: 5px; box-shadow: inset 0 -1px rgba(0,0,0,.35); }
+  .touch-controls { display: none; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px 13px 14px; }
+  .touch-controls .button { user-select: none; touch-action: none; font-size: 20px; min-height: 48px; }
+  .side-column { display: grid; gap: 14px; }
+  .side-panel { padding: 16px; }
+  .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 13px; }
+  .panel-heading h3 { margin: 0; font-size: 15px; }
+  .panel-heading span { color: var(--muted); font-size: 10px; letter-spacing: .12em; }
+  .form-field { margin-bottom: 13px; }
+  .form-field:last-child { margin-bottom: 0; }
+  .form-field label { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; color: var(--muted); font-size: 12px; }
+  .form-field label small { color: #8d84a7; }
+  select { width: 100%; min-height: 39px; color: var(--text); border: 1px solid var(--line-strong); border-radius: 9px; padding: 8px 10px; background: #211b35; }
+  .settings-note { margin: 12px 0 0; color: #948ba9; font-size: 11px; line-height: 1.65; }
+  .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .action-grid .wide { grid-column: 1 / -1; }
+  .round-map { display: grid; grid-template-columns: repeat(7,1fr); gap: 5px; }
+  .lane-chip { height: 34px; border: 1px solid var(--line); background: rgba(255,255,255,.025); border-radius: 8px; color: #948ba9; display: grid; place-items: center; font-size: 11px; position: relative; }
+  .lane-chip.safe { border-color: rgba(125,220,197,.45); background: rgba(65,156,133,.14); color: var(--safe); }
+  .lane-chip.danger { border-color: rgba(255,109,141,.44); background: rgba(160,45,75,.14); color: #ff99b0; }
+  .lane-chip.target { outline: 2px solid var(--warning); outline-offset: 1px; color: var(--warning); }
+  .lane-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; color: var(--muted); font-size: 11px; }
+  .legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+  .legend-dot.safe { background: var(--safe); } .legend-dot.danger { background: var(--danger); } .legend-dot.target { background: var(--warning); }
+  .log-list { display: grid; gap: 7px; min-height: 32px; }
+  .log-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 9px; border-radius: 8px; background: rgba(255,255,255,.025); font-size: 11px; }
+  .log-row .log-name { color: var(--muted); }
+  .log-row strong { font-size: 11px; font-weight: 700; }
+  .log-row .status-safe { color: var(--safe); } .log-row .status-danger { color: var(--danger); } .log-row .status-wait { color: #938aa8; }
+  .empty-log { color: #8d84a7; font-size: 12px; line-height: 1.6; padding: 4px 0; }
+  .mini-tutorial { padding: 13px 15px; }
+  .mini-tutorial h3 { margin: 0 0 9px; font-size: 14px; }
+  .mini-tutorial ol { padding-left: 20px; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.8; }
+  .mini-tutorial li + li { margin-top: 4px; }
+  .asset-note { padding: 13px 15px; background: rgba(102,217,232,.045); border: 1px solid rgba(102,217,232,.14); border-radius: 12px; }
+  .asset-note h3 { margin: 0 0 6px; font-size: 13px; color: var(--cyan); }
+  .asset-note p { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.7; }
+  .asset-note code { color: #e4dcff; overflow-wrap: anywhere; }
+  .footer-note { margin: 18px 4px 0; display: flex; gap: 10px; justify-content: space-between; color: #776e8d; font-size: 10px; line-height: 1.7; }
+  .footer-note a { color: #a89bc7; }
+  .toast { position: fixed; z-index: 50; bottom: 18px; left: 50%; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; background: #211b35; border: 1px solid var(--line-strong); border-radius: 10px; padding: 11px 15px; box-shadow: var(--shadow); font-size: 12px; transition: opacity .2s, transform .2s; max-width: calc(100vw - 30px); }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  body.fullscreen-mode { overflow: hidden; }
+  .game-panel.fake-fullscreen { position: fixed; z-index: 100; inset: 10px; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line-strong); border-radius: 16px; }
+  .game-panel.fake-fullscreen .stage-topbar, .game-panel.fake-fullscreen .hud-row, .game-panel.fake-fullscreen .stage-footer, .game-panel.fake-fullscreen .touch-controls { flex-shrink: 0; }
+  .game-panel.fake-fullscreen .canvas-wrap { flex: 1; min-height: 0; display: grid; place-items: center; }
+  .game-panel.fake-fullscreen #gameCanvas { width: auto; height: 100%; max-width: 100%; object-fit: contain; }
+  @media (max-width: 1050px) {
+    .game-layout { grid-template-columns: minmax(0, 1fr) 270px; gap: 12px; }
+    .page-wrap, .site-header { padding-left: 18px; padding-right: 18px; }
+    .side-panel { padding: 13px; }
+    .hud-row { padding: 10px; }
+  }
+  @media (max-width: 820px) {
+    .game-layout { grid-template-columns: minmax(0,1fr); }
+    .side-column { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; }
+    .side-column .asset-note { grid-column: 1 / -1; }
+    .touch-controls { display: grid; }
+  }
+  @media (max-width: 560px) {
+    .site-header { padding: 15px 13px 12px; gap: 10px; }
+    .brand-mark { width: 39px; height: 39px; flex-basis: 39px; border-radius: 12px; font-size: 20px; }
+    .brand-copy h1 { font-size: 19px; }
+    .brand-copy p { font-size: 8px; letter-spacing: .1em; }
+    .header-actions { gap: 5px; }
+    .icon-button { min-width: 37px; min-height: 37px; padding: 7px; }
+    .page-wrap { padding: 0 10px 24px; }
+    .intro-strip { padding: 10px 11px; margin-bottom: 10px; font-size: 11px; border-radius: 11px; }
+    .stage-topbar { padding: 12px 11px; gap: 7px; }
+    .stage-title h2 { font-size: 14px; }
+    .phase-chip { font-size: 9px; padding: 5px 7px; }
+    .hud-row { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 5px; padding: 7px; }
+    .hud-stat { padding: 7px 6px; border-radius: 7px; }
+    .hud-stat span { font-size: 9px; }
+    .hud-stat strong { font-size: 13px; }
+    .game-overlay { padding: 10px; }
+    .overlay-card { padding: 17px 14px; }
+    .overlay-card h3 { font-size: 21px; }
+    .overlay-card p { font-size: 12px; }
+    .stage-footer { padding: 9px 10px; font-size: 10px; }
+    .side-column { grid-template-columns: minmax(0,1fr); }
+    .side-column .asset-note { grid-column: auto; }
+    .side-panel { padding: 14px; }
+    .footer-note { display: block; margin: 14px 2px 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="brand-mark" aria-hidden="true">✣</div>
+  <div class="brand-copy">
+    <h1>鏡界裂痕</h1>
+    <p>MIRROR BREACH · PHASE II POSITIONING TRAINER</p>
+  </div>
+  <div class="header-actions">
+    <button class="icon-button" id="soundBtn" type="button" aria-label="切換音效" aria-pressed="false" title="切換簡單提示音">♫</button>
+    <button class="icon-button" id="fullscreenBtn" type="button" aria-label="切換遊戲畫面大小" title="放大遊戲畫面">⛶</button>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div class="intro-strip">
+    <span class="intro-icon" aria-hidden="true">✦</span>
+    <div><strong>訓練目標：</strong>觀察蜘蛛腳的攻擊順序，記住被劈砍的地板區域，並在鏡面龜裂前移動到安全位置。這是玩法訓練版，視覺素材為原創設計，時間與攻擊模式可調整。</div>
+  </div>
+
+  <div class="game-layout">
+    <section class="game-column" aria-label="遊戲區">
+      <div class="panel game-panel" id="gamePanel">
+        <div class="stage-topbar">
+          <div class="stage-title">
+            <div class="eyebrow">PHASE II · MIRROR FIELD</div>
+            <h2>虛假之鏡｜裂痕走位訓練</h2>
+          </div>
+          <div class="phase-chip" id="phaseChip">等待開始</div>
+        </div>
+        <div class="hud-row" aria-live="polite">
+          <div class="hud-stat"><span>練習輪次</span><strong id="roundStat">— / 5</strong></div>
+          <div class="hud-stat"><span>蜘蛛腳紀錄</span><strong id="strikeStat">0 / 3</strong></div>
+          <div class="hud-stat"><span>裂痕倒數</span><strong class="timer" id="timerStat">—</strong></div>
+          <div class="hud-stat"><span>生命狀態</span><strong class="lives" id="livesStat">♥ ♥ ♥</strong></div>
+        </div>
+        <div class="canvas-wrap" id="canvasWrap">
+          <canvas id="gameCanvas" width="1000" height="560" tabindex="0" aria-label="鏡面走位訓練遊戲畫面。使用左右方向鍵或 A、D 移動。"></canvas>
+          <div class="game-overlay" id="gameOverlay">
+            <div class="overlay-card" id="overlayCard">
+              <div class="overlay-kicker">POSITIONING SIMULATION</div>
+              <h3 id="overlayTitle">準備進入鏡界</h3>
+              <p id="overlayText">蜘蛛腳依序劈砍地板後，已劈砍的位置會留下紀錄。鏡面龜裂倒數結束前，移動至其中一個安全區域。</p>
+              <div class="overlay-actions" id="overlayActions">
+                <button class="button primary" id="overlayStartBtn" type="button">開始練習</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="touch-controls" aria-label="觸控移動控制">
+          <button class="button" id="touchLeft" type="button" aria-label="向左移動">← 左移</button>
+          <button class="button" id="touchRight" type="button" aria-label="向右移動">右移 →</button>
+        </div>
+        <div class="stage-footer">
+          <div class="key-hints"><span>移動</span><kbd>←</kbd><kbd>→</kbd><kbd>A</kbd><kbd>D</kbd><span>暫停</span><kbd>P</kbd><kbd>Esc</kbd></div>
+          <div id="statusText" aria-live="polite">等待開始練習</div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side-column" aria-label="遊戲設定與資訊">
+      <section class="panel side-panel">
+        <div class="panel-heading"><h3>練習設定</h3><span>SETUP</span></div>
+        <div class="form-field">
+          <label for="strikeCount">蜘蛛腳攻擊次數 <small>每輪</small></label>
+          <select id="strikeCount">
+            <option value="3" selected>目前練習：3 次</option>
+            <option value="5">延伸練習：5 次</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="roundCount">練習輪數</label>
+          <select id="roundCount">
+            <option value="3">3 輪</option>
+            <option value="5" selected>5 輪</option>
+            <option value="10">10 輪</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="difficulty">反應時間</label>
+          <select id="difficulty">
+            <option value="easy">熟悉模式（較長倒數）</option>
+            <option value="normal" selected>一般模式</option>
+            <option value="hard">快速模式</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="sequenceMode">攻擊序列</label>
+          <select id="sequenceMode">
+            <option value="random" selected>每輪隨機</option>
+            <option value="fixed">固定序列（反覆練習）</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="hintMode">場景提示</label>
+          <select id="hintMode">
+            <option value="guided" selected>教學提示（顯示攻擊紀錄）</option>
+            <option value="normal">實戰提示（降低輔助標記）</option>
+          </select>
+        </div>
+        <div class="action-grid" aria-label="遊戲控制">
+          <button class="button primary wide" id="startBtn" type="button">開始練習</button>
+          <button class="button" id="pauseBtn" type="button">暫停／繼續</button>
+          <button class="button danger" id="restartBtn" type="button">重新開始</button>
+        </div>
+        <p class="settings-note">設定只會影響訓練器。地板安全判定以「本輪已被蜘蛛腳劈砍的區域」為準；實際攻擊時間可依你的遊戲版本再校正。</p>
+      </section>
+
+      <section class="panel side-panel">
+        <div class="panel-heading"><h3>地板狀態</h3><span>LANE MAP</span></div>
+        <div class="round-map" id="laneMap" aria-label="七個地板區域狀態"></div>
+        <div class="lane-legend">
+          <span><i class="legend-dot safe"></i>已劈砍／安全</span>
+          <span><i class="legend-dot danger"></i>尚未劈砍／危險</span>
+          <span><i class="legend-dot target"></i>攻擊目標</span>
+        </div>
+      </section>
+
+      <section class="panel side-panel">
+        <div class="panel-heading"><h3>本輪攻擊紀錄</h3><span>LOG</span></div>
+        <div class="log-list" id="attackLog"><div class="empty-log">開始練習後，這裡會記錄蜘蛛腳的攻擊位置。</div></div>
+      </section>
+
+      <section class="panel mini-tutorial">
+        <h3>操作流程</h3>
+        <ol>
+          <li>觀察蜘蛛腳預告，記住它劈砍的位置。</li>
+          <li>等待本輪攻擊結束，地板會開始龜裂倒數。</li>
+          <li>移動到已劈砍的地板區域，避免受到龜裂傷害。</li>
+          <li>每輪結束後確認結果，重複練習。</li>
+        </ol>
+      </section>
+
+      <section class="asset-note">
+        <h3>自訂角色素材</h3>
+        <p>將你的角色圖片放在 <code>assets/character/</code>。支援 <code>player-idle.png</code>、<code>run-1.png</code> 至 <code>run-6.png</code> 與選用的 <code>player-hurt.png</code>。若沒有素材，遊戲會用原創占位角色代替。</p>
+      </section>
+    </aside>
+  </div>
+
+  <div class="footer-note">
+    <span>原創練習專案｜非官方作品，與 NEXON／《楓之谷 M》無隸屬或背書關係。</span>
+    <span>GitHub Pages 友善：單一 <code>index.html</code> + <code>assets/</code> 相對路徑</span>
+  </div>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ========================
+  // 1. 集中設定
+  // ========================
+  const CONFIG = {
+    width: 1000,
+    height: 560,
+    laneCount: 7,
+    startLives: 3,
+    moveSpeed: 350,          // 虛擬像素／秒
+    startingCountdown: 3,
+    attackWarning: 0.78,
+    attackDuration: 0.30,
+    attackInterval: 0.58,
+    collapseCountdown: 3.0,
+    collapseDuration: 0.72,
+    resultDuration: 1.05,
+    invincibleDuration: 0.9,
+    fixedSequence: [0, 2, 4, 1, 5],
+    assets: {
+      background: './assets/scene/mirror-arena-bg.svg',
+      spiderLeg: './assets/spider/phase-leg.svg',
+      crack: './assets/effects/mirror-crack.svg',
+      idle: './assets/character/player-idle.png',
+      hurt: './assets/character/player-hurt.png',
+      runFrames: [
+        './assets/character/run-1.png', './assets/character/run-2.png',
+        './assets/character/run-3.png', './assets/character/run-4.png',
+        './assets/character/run-5.png', './assets/character/run-6.png'
+      ]
+    },
+    difficulty: {
+      easy: { warning: 1.05, interval: 0.78, dodge: 4.0, move: 330 },
+      normal: { warning: 0.78, interval: 0.58, dodge: 3.0, move: 350 },
+      hard: { warning: 0.58, interval: 0.42, dodge: 2.0, move: 375 }
+    }
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const canvas = $('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const ui = {
+    phase: $('phaseChip'), round: $('roundStat'), strikes: $('strikeStat'), timer: $('timerStat'),
+    lives: $('livesStat'), status: $('statusText'), overlay: $('gameOverlay'),
+    overlayCard: $('overlayCard'), overlayTitle: $('overlayTitle'), overlayText: $('overlayText'), overlayActions: $('overlayActions'),
+    overlayStart: $('overlayStartBtn'), startBtn: $('startBtn'), pauseBtn: $('pauseBtn'), restartBtn: $('restartBtn'), laneMap: $('laneMap'), attackLog: $('attackLog'),
+    strikeCount: $('strikeCount'), roundCount: $('roundCount'), difficulty: $('difficulty'),
+    sequenceMode: $('sequenceMode'), hintMode: $('hintMode'), toast: $('toast'), soundBtn: $('soundBtn'),
+    fullscreenBtn: $('fullscreenBtn'), gamePanel: $('gamePanel'),
+    touchLeft: $('touchLeft'), touchRight: $('touchRight')
+  };
+
+  const assets = {};
+  let soundEnabled = false;
+  let audioContext = null;
+  let toastTimer = 0;
+  let lastFrame = 0;
+  let animationFrameId = 0;
+  let gameActive = true;
+  const keys = new Set();
+  const touchDirection = { left: false, right: false };
+
+  const game = {
+    state: 'idle',
+    timer: 0,
+    round: 0,
+    roundTotal: 5,
+    attackCount: 3,
+    attackIndex: 0,
+    targetLane: null,
+    struck: [],
+    sequence: [],
+    playerX: 500,
+    playerFacing: 1,
+    playerMoving: false,
+    runClock: 0,
+    lives: CONFIG.startLives,
+    directHits: 0,
+    invincible: 0,
+    lastDamageAt: -Infinity,
+    roundResults: [],
+    currentRoundResult: null,
+    attackHistory: [],
+    safeReachMs: null,
+    dodgeStartedAt: 0,
+    previousLane: 3,
+    elapsed: 0,
+    roundStartElapsed: 0,
+    shake: 0,
+    particles: [],
+    message: '',
+    lastSafeLane: null,
+    soundNotice: ''
+  };
+
+  function loadImage(path) {
+    return new Promise((resolve) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => resolve(null);
+      image.src = path;
+    });
+  }
+
+  async function loadAssets() {
+    const imageEntries = Object.entries(CONFIG.assets).filter(([key]) => key !== 'runFrames');
+    const loaded = await Promise.all(imageEntries.map(async ([key, path]) => [key, await loadImage(path)]));
+    loaded.forEach(([key, image]) => { assets[key] = image; });
+    assets.runFrames = await Promise.all(CONFIG.assets.runFrames.map(loadImage));
+    assets.runFrames = assets.runFrames.filter(Boolean);
+    updateCharacterAssetNotice();
+  }
+
+  function updateCharacterAssetNotice() {
+    const hasAny = Boolean(assets.idle || (assets.runFrames && assets.runFrames.length));
+    document.documentElement.dataset.customCharacter = hasAny ? 'true' : 'false';
+    if (hasAny) {
+      showToast('已載入自訂角色素材。');
+    }
+  }
+
+  function currentDifficulty() {
+    return CONFIG.difficulty[ui.difficulty.value] || CONFIG.difficulty.normal;
+  }
+
+  function laneCenter(index) {
+    const lane = Math.max(0, Math.min(CONFIG.laneCount - 1, index));
+    const left = 48;
+    const right = 952;
+    const width = (right - left) / CONFIG.laneCount;
+    return left + width * (lane + 0.5);
+  }
+
+  function laneWidth() { return (952 - 48) / CONFIG.laneCount; }
+  function laneAtX(x) { return Math.max(0, Math.min(CONFIG.laneCount - 1, Math.floor((x - 48) / laneWidth()))); }
+
+  function buildRandomSequence(count) {
+    const lanes = Array.from({ length: CONFIG.laneCount }, (_, index) => index);
+    for (let i = lanes.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [lanes[i], lanes[j]] = [lanes[j], lanes[i]];
+    }
+    return lanes.slice(0, Math.min(count, CONFIG.laneCount));
+  }
+
+  function buildFixedSequence(count) {
+    return CONFIG.fixedSequence.slice(0, count);
+  }
+
+  function makeSequence() {
+    const count = game.attackCount;
+    return ui.sequenceMode.value === 'fixed' ? buildFixedSequence(count) : buildRandomSequence(count);
+  }
+
+  function setStatus(label, message) {
+    ui.phase.textContent = label;
+    ui.status.textContent = message;
+    if (ui.pauseBtn) ui.pauseBtn.textContent = game.state === 'paused' ? '繼續練習' : '暫停遊戲';
+    if (ui.startBtn) {
+      ui.startBtn.textContent = game.state === 'idle' ? '開始練習' : (game.state === 'finished' ? '再次挑戰' : '重新開始挑戰');
+    }
+  }
+
+  function showToast(message) {
+    ui.toast.textContent = message;
+    ui.toast.classList.add('show');
+    window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => ui.toast.classList.remove('show'), 2200);
+  }
+
+  function showOverlay({ title, text, actions, kicker = 'POSITIONING SIMULATION' }) {
+    ui.overlayTitle.textContent = title;
+    ui.overlayText.textContent = text;
+    const oldKicker = ui.overlayCard.querySelector('.overlay-kicker');
+    if (oldKicker) oldKicker.textContent = kicker;
+    ui.overlayActions.replaceChildren();
+    actions.forEach(({ label, className = 'button', onClick }) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = className;
+      button.textContent = label;
+      button.addEventListener('click', onClick);
+      ui.overlayActions.appendChild(button);
+    });
+    ui.overlay.hidden = false;
+  }
+
+  function hideOverlay() { ui.overlay.hidden = true; }
+
+  function startGame() {
+    removeResultExtras();
+    game.attackCount = Number(ui.strikeCount.value) || 3;
+    game.roundTotal = Number(ui.roundCount.value) || 5;
+    game.round = 0;
+    game.lives = CONFIG.startLives;
+    game.directHits = 0;
+    game.roundResults = [];
+    game.attackHistory = [];
+    game.invincible = 0;
+    game.elapsed = 0;
+    game.playerX = laneCenter(3);
+    game.playerFacing = 1;
+    game.particles = [];
+    startRound(true);
+    hideOverlay();
+    canvas.focus({ preventScroll: true });
+    playTone(520, 0.08, 'sine');
+    syncHud();
+  }
+
+  function startRound(isFirst = false) {
+    game.round += 1;
+    game.state = 'countdown';
+    game.timer = CONFIG.startingCountdown;
+    game.attackIndex = 0;
+    game.targetLane = null;
+    game.struck = Array(CONFIG.laneCount).fill(false);
+    game.sequence = makeSequence();
+    game.currentRoundResult = null;
+    game.safeReachMs = null;
+    game.dodgeStartedAt = 0;
+    game.previousLane = laneAtX(game.playerX);
+    game.roundStartElapsed = game.elapsed;
+    game.invincible = 0;
+    game.attackHistory = [];
+    if (!isFirst) game.message = '下一輪即將開始';
+    setStatus('準備階段', '觀察即將出現的攻擊序列');
+    renderAttackLog();
+    syncHud();
+    updateLaneMap();
+  }
+
+  function startNextAttack() {
+    if (game.attackIndex >= game.sequence.length) {
+      beginDodgeWindow();
+      return;
+    }
+    game.targetLane = game.sequence[game.attackIndex];
+    game.state = 'warning';
+    game.timer = currentDifficulty().warning;
+    setStatus('蜘蛛腳預告', `第 ${game.attackIndex + 1} 次攻擊：注意地板位置`);
+    playTone(620, 0.07, 'triangle');
+    updateLaneMap();
+  }
+
+  function beginAttack() {
+    game.state = 'attacking';
+    game.timer = CONFIG.attackDuration;
+    game.shake = 0.14;
+    setStatus('蜘蛛腳落下', `攻擊位置：區域 ${game.targetLane + 1}`);
+  }
+
+  function finishAttack() {
+    if (game.targetLane !== null) {
+      game.struck[game.targetLane] = true;
+      game.attackHistory.push(game.targetLane);
+      const playerLane = laneAtX(game.playerX);
+      if (playerLane === game.targetLane && game.invincible <= 0) {
+        damagePlayer('蜘蛛腳直接命中', true);
+      }
+      spawnImpact(laneCenter(game.targetLane), 344);
+    }
+    game.state = 'interval';
+    game.timer = currentDifficulty().interval;
+    game.targetLane = null;
+    renderAttackLog();
+    updateLaneMap();
+    syncHud();
+    playTone(180, 0.08, 'sawtooth');
+  }
+
+  function beginDodgeWindow() {
+    game.state = 'dodge';
+    game.timer = currentDifficulty().dodge;
+    game.dodgeStartedAt = performance.now();
+    const lane = laneAtX(game.playerX);
+    game.safeReachMs = game.struck[lane] ? 0 : null;
+    game.previousLane = lane;
+    setStatus('鏡面龜裂倒數', '移動到已被劈砍的安全區域！');
+    playTone(720, 0.11, 'sine');
+    updateLaneMap();
+  }
+
+  function beginCollapse() {
+    game.state = 'collapsing';
+    game.timer = CONFIG.collapseDuration;
+    const playerLane = laneAtX(game.playerX);
+    const safe = Boolean(game.struck[playerLane]);
+    const reach = game.safeReachMs === null ? null : game.safeReachMs;
+    game.currentRoundResult = {
+      round: game.round,
+      safe,
+      lane: playerLane,
+      safeLanes: game.struck.map((value, i) => value ? i : -1).filter((i) => i >= 0),
+      reactionMs: reach,
+      directHit: false
+    };
+    if (!safe) {
+      damagePlayer('鏡面龜裂時位於危險區域', false, true);
+      game.message = '危險區域！本輪判定失誤';
+      setStatus('鏡面龜裂', '判定失誤：所在區域尚未被劈砍');
+    } else {
+      game.message = '成功躲過鏡面龜裂';
+      setStatus('鏡面龜裂', '安全！本輪判定成功');
+      playTone(880, 0.12, 'sine');
+    }
+    game.roundResults.push(game.currentRoundResult);
+    game.shake = safe ? 0.06 : 0.24;
+    updateLaneMap();
+    syncHud();
+  }
+
+  function finishRound() {
+    game.state = 'roundResult';
+    game.timer = CONFIG.resultDuration;
+    renderAttackLog();
+    syncHud();
+    if (game.lives <= 0) {
+      game.message = '生命耗盡，挑戰結束';
+      setStatus('挑戰結束', '生命耗盡，查看練習紀錄');
+    } else if (game.round >= game.roundTotal) {
+      setStatus('完成訓練', '已完成所有輪次，準備查看成績');
+    } else {
+      setStatus(game.currentRoundResult?.safe ? '本輪成功' : '本輪失誤', '下一輪即將開始');
+    }
+  }
+
+  function finishGame(reason) {
+    game.state = 'finished';
+    const checks = game.roundResults.length;
+    const success = game.roundResults.filter((result) => result.safe).length;
+    const rate = checks ? Math.round(success / checks * 100) : 0;
+    const reactionValues = game.roundResults.filter((result) => result.safe && result.reactionMs !== null).map((result) => result.reactionMs);
+    const avgReaction = reactionValues.length ? Math.round(reactionValues.reduce((a, b) => a + b, 0) / reactionValues.length) : null;
+    const directHits = countDirectHits();
+    const title = reason === 'failed' ? '再練一次，會更熟悉' : '訓練完成！';
+    const text = reason === 'failed' ? '生命已耗盡。查看本次紀錄，重新挑戰相同設定。' : '你已完成這次鏡界走位訓練。可重試同一設定，繼續練習反應時機。';
+    const card = ui.overlayCard;
+    ui.overlayTitle.textContent = title;
+    ui.overlayText.textContent = text;
+    const kicker = card.querySelector('.overlay-kicker');
+    if (kicker) kicker.textContent = 'SESSION REVIEW';
+    const summary = document.createElement('div');
+    summary.className = 'overlay-results';
+    summary.innerHTML = `
+      <div class="overlay-result"><span>安全成功率</span><strong>${rate}%</strong></div>
+      <div class="overlay-result"><span>錯誤輪次</span><strong>${game.roundResults.filter(r => !r.safe).length}</strong></div>
+      <div class="overlay-result"><span>蜘蛛腳命中</span><strong>${directHits}</strong></div>
+    `;
+    if (avgReaction !== null) {
+      const reaction = document.createElement('p');
+      reaction.style.marginTop = '-3px';
+      reaction.textContent = `成功進入安全區的平均反應時間：約 ${(avgReaction / 1000).toFixed(2)} 秒。`;
+      ui.overlayText.after(reaction);
+      game._resultReactionNode = reaction;
+    }
+    ui.overlayActions.replaceChildren();
+    const retry = document.createElement('button');
+    retry.type = 'button'; retry.className = 'button primary'; retry.textContent = '重新挑戰'; retry.addEventListener('click', () => { removeResultExtras(); startGame(); });
+    const review = document.createElement('button');
+    review.type = 'button'; review.className = 'button'; review.textContent = '查看攻擊紀錄'; review.addEventListener('click', () => { removeResultExtras(); hideOverlay(); document.querySelector('#attackLog').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); showToast('攻擊紀錄已保留在右側面板。'); });
+    summary.id = 'resultSummary';
+    ui.overlayText.after(summary);
+    ui.overlayActions.append(retry, review);
+    ui.overlay.hidden = false;
+    setStatus('結算完成', `安全成功率 ${rate}% · 錯誤 ${game.roundResults.filter(r => !r.safe).length} 輪`);
+    syncHud();
+  }
+
+  function removeResultExtras() {
+    $('resultSummary')?.remove();
+    game._resultReactionNode?.remove();
+    game._resultReactionNode = null;
+  }
+
+  function countDirectHits() { return game.directHits; }
+
+  function damagePlayer(reason, isDirectHit = false, ignoreInvincibility = false) {
+    const now = performance.now() / 1000;
+    if (!ignoreInvincibility && (game.invincible > 0 || now - game.lastDamageAt < CONFIG.invincibleDuration)) return false;
+    game.lives = Math.max(0, game.lives - 1);
+    if (isDirectHit) game.directHits += 1;
+    game.invincible = CONFIG.invincibleDuration;
+    game.lastDamageAt = now;
+    game.shake = 0.28;
+    game.message = reason;
+    spawnImpact(game.playerX, 456, true);
+    playTone(120, 0.16, 'square');
+    showToast(reason);
+    return true;
+  }
+
+  function spawnImpact(x, y, hurt = false) {
+    for (let i = 0; i < (hurt ? 18 : 12); i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 35 + Math.random() * 150;
+      game.particles.push({
+        x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 25,
+        life: 0.35 + Math.random() * 0.45, maxLife: 0.8,
+        size: 2 + Math.random() * 4, color: hurt ? '#ff7899' : (Math.random() > .5 ? '#9f89f4' : '#7ddcc5')
+      });
+    }
+  }
+
+  function playTone(frequency, duration, type = 'sine') {
+    if (!soundEnabled) return;
+    try {
+      audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+      if (audioContext.state === 'suspended') audioContext.resume();
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      oscillator.type = type;
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(0.045, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+      oscillator.connect(gain); gain.connect(audioContext.destination);
+      oscillator.start(); oscillator.stop(audioContext.currentTime + duration);
+    } catch (error) { console.warn('無法播放提示音：', error); }
+  }
+
+  function pauseGame() {
+    if (['idle', 'finished', 'paused'].includes(game.state)) return;
+    game.previousState = game.state;
+    game.state = 'paused';
+    setStatus('已暫停', '遊戲已暫停');
+    showOverlay({
+      title: '練習暫停', text: '攻擊流程與倒數已停止。準備好後可繼續練習。', kicker: 'PAUSED',
+      actions: [
+        { label: '繼續練習', className: 'button primary', onClick: resumeGame },
+        { label: '重新開始', className: 'button', onClick: () => { removeResultExtras(); startGame(); } },
+        { label: '結束本次', className: 'button danger', onClick: () => finishGame('completed') }
+      ]
+    });
+  }
+
+  function resumeGame() {
+    if (game.state !== 'paused') return;
+    game.state = game.previousState || 'dodge';
+    hideOverlay();
+    setStatus(stateLabel(game.state), stateMessage(game.state));
+    canvas.focus({ preventScroll: true });
+  }
+
+  function stateLabel(state) {
+    return ({ countdown: '準備階段', warning: '蜘蛛腳預告', attacking: '蜘蛛腳落下', interval: '攻擊間隔', dodge: '鏡面龜裂倒數', collapsing: '鏡面龜裂', roundResult: '本輪結果', finished: '挑戰結束', paused: '已暫停' })[state] || '等待開始';
+  }
+  function stateMessage(state) {
+    return ({ countdown: '觀察即將出現的攻擊序列', warning: '注意蜘蛛腳目標位置', attacking: '蜘蛛腳正在落下', interval: '記住已劈砍區域', dodge: '移動到已被劈砍的安全區域！', collapsing: '鏡面正在龜裂', roundResult: '查看本輪結果' })[state] || '等待開始練習';
+  }
+
+  function update(delta) {
+    if (game.state === 'paused' || game.state === 'idle' || game.state === 'finished') return;
+    const dt = Math.min(delta, 0.05);
+    game.elapsed += dt;
+    game.timer -= dt;
+    game.invincible = Math.max(0, game.invincible - dt);
+    game.shake = Math.max(0, game.shake - dt);
+    updatePlayer(dt);
+    updateParticles(dt);
+
+    if (game.state === 'countdown' && game.timer <= 0) {
+      startNextAttack();
+    } else if (game.state === 'warning' && game.timer <= 0) {
+      beginAttack();
+    } else if (game.state === 'attacking' && game.timer <= 0) {
+      finishAttack();
+    } else if (game.state === 'interval' && game.timer <= 0) {
+      game.attackIndex += 1;
+      startNextAttack();
+    } else if (game.state === 'dodge') {
+      const currentLane = laneAtX(game.playerX);
+      if (currentLane !== game.previousLane && game.struck[currentLane] && game.safeReachMs === null) {
+        game.safeReachMs = Math.round((performance.now() - game.dodgeStartedAt));
+      }
+      game.previousLane = currentLane;
+      if (game.timer <= 0) beginCollapse();
+    } else if (game.state === 'collapsing' && game.timer <= 0) {
+      finishRound();
+    } else if (game.state === 'roundResult' && game.timer <= 0) {
+      if (game.lives <= 0) finishGame('failed');
+      else if (game.round >= game.roundTotal) finishGame('completed');
+      else startRound();
+    }
+    syncHud();
+  }
+
+  function updatePlayer(dt) {
+    const left = keys.has('ArrowLeft') || keys.has('a') || keys.has('A') || touchDirection.left;
+    const right = keys.has('ArrowRight') || keys.has('d') || keys.has('D') || touchDirection.right;
+    let direction = 0;
+    if (left && !right) direction = -1;
+    else if (right && !left) direction = 1;
+    game.playerMoving = direction !== 0 && !['idle', 'finished', 'paused'].includes(game.state);
+    if (direction !== 0 && !['idle', 'finished', 'paused'].includes(game.state)) {
+      game.playerX += direction * currentDifficulty().move * dt;
+      game.playerX = Math.max(64, Math.min(936, game.playerX));
+      game.playerFacing = direction;
+      game.runClock += dt;
+    }
+  }
+
+  function updateParticles(dt) {
+    game.particles = game.particles.filter((particle) => {
+      particle.life -= dt;
+      particle.x += particle.vx * dt;
+      particle.y += particle.vy * dt;
+      particle.vy += 165 * dt;
+      return particle.life > 0;
+    });
+  }
+
+  function syncHud() {
+    ui.round.textContent = game.round ? `${Math.min(game.round, game.roundTotal)} / ${game.roundTotal}` : `— / ${game.roundTotal}`;
+    ui.strikes.textContent = `${Math.min(game.attackIndex + (game.state === 'interval' || game.state === 'dodge' || game.state === 'collapsing' || game.state === 'roundResult' ? 1 : 0), game.attackCount)} / ${game.attackCount}`;
+    let timerText = '—';
+    if (['countdown', 'warning', 'attacking', 'interval', 'dodge', 'collapsing', 'roundResult'].includes(game.state)) timerText = Math.max(0, game.timer).toFixed(game.state === 'dodge' ? 1 : 0);
+    ui.timer.textContent = timerText;
+    ui.lives.textContent = game.lives > 0 ? `${'♥ '.repeat(game.lives).trim()}${game.lives < CONFIG.startLives ? ` ${'♡ '.repeat(CONFIG.startLives - game.lives).trim()}` : ''}` : '♡ ♡ ♡';
+  }
+
+  function updateLaneMap() {
+    ui.laneMap.replaceChildren();
+    for (let lane = 0; lane < CONFIG.laneCount; lane++) {
+      const chip = document.createElement('div');
+      chip.className = 'lane-chip';
+      chip.textContent = String(lane + 1);
+      chip.title = `區域 ${lane + 1}`;
+      if (game.struck[lane]) chip.classList.add('safe');
+      if (game.state === 'collapsing' && !game.struck[lane]) chip.classList.add('danger');
+      if (game.targetLane === lane && ['warning', 'attacking'].includes(game.state)) chip.classList.add('target');
+      ui.laneMap.appendChild(chip);
+    }
+  }
+
+  function renderAttackLog() {
+    ui.attackLog.replaceChildren();
+    if (!game.attackHistory.length) {
+      const empty = document.createElement('div'); empty.className = 'empty-log';
+      empty.textContent = '開始練習後，這裡會記錄蜘蛛腳的攻擊位置。';
+      ui.attackLog.appendChild(empty); return;
+    }
+    game.attackHistory.forEach((lane, index) => {
+      const row = document.createElement('div'); row.className = 'log-row';
+      const name = document.createElement('span'); name.className = 'log-name'; name.textContent = `第 ${index + 1} 次劈砍`;
+      const status = document.createElement('strong'); status.className = 'status-safe'; status.textContent = `區域 ${lane + 1} · 已記錄`;
+      row.append(name, status); ui.attackLog.appendChild(row);
+    });
+  }
+
+  // ========================
+  // 2. Canvas 畫面繪製
+  // ========================
+  function draw() {
+    ctx.clearRect(0, 0, CONFIG.width, CONFIG.height);
+    ctx.save();
+    if (game.shake > 0) {
+      const amount = Math.min(7, game.shake * 24);
+      ctx.translate((Math.random() - .5) * amount, (Math.random() - .5) * amount);
+    }
+    drawBackground();
+    drawArena();
+    drawLaneStates();
+    drawSpiderLeg();
+    drawPlayer();
+    drawParticles();
+    drawSceneText();
+    ctx.restore();
+  }
+
+  function drawBackground() {
+    if (assets.background) {
+      ctx.drawImage(assets.background, 0, 0, CONFIG.width, CONFIG.height);
+    } else {
+      const gradient = ctx.createLinearGradient(0, 0, 0, CONFIG.height);
+      gradient.addColorStop(0, '#17102a'); gradient.addColorStop(.55, '#25203d'); gradient.addColorStop(1, '#0c0915');
+      ctx.fillStyle = gradient; ctx.fillRect(0, 0, CONFIG.width, CONFIG.height);
+    }
+    // 自製漂浮光塵
+    for (let i = 0; i < 22; i++) {
+      const x = (i * 149 + game.elapsed * (7 + i % 4)) % CONFIG.width;
+      const y = 44 + ((i * 79) % 250) + Math.sin(game.elapsed * .4 + i) * 7;
+      ctx.fillStyle = `rgba(180,157,255,${.08 + (i % 4) * .025})`;
+      ctx.beginPath(); ctx.arc(x, y, 1 + (i % 3) * .45, 0, Math.PI * 2); ctx.fill();
+    }
+    const vignette = ctx.createRadialGradient(500, 280, 150, 500, 280, 600);
+    vignette.addColorStop(0, 'rgba(7,4,15,0)'); vignette.addColorStop(1, 'rgba(5,3,12,.58)');
+    ctx.fillStyle = vignette; ctx.fillRect(0, 0, CONFIG.width, CONFIG.height);
+  }
+
+  function drawArena() {
+    const floor = ctx.createLinearGradient(0, 290, 0, 535);
+    floor.addColorStop(0, 'rgba(50,43,73,.95)'); floor.addColorStop(.5, 'rgba(36,31,55,.98)'); floor.addColorStop(1, 'rgba(16,13,26,.99)');
+    ctx.beginPath(); ctx.moveTo(91, 288); ctx.lineTo(909, 288); ctx.lineTo(982, 522); ctx.lineTo(18, 522); ctx.closePath();
+    ctx.fillStyle = floor; ctx.fill();
+    ctx.strokeStyle = 'rgba(189,166,255,.36)'; ctx.lineWidth = 1.4; ctx.stroke();
+
+    // 地板橫向石板縫，使用獨立的自製幾何樣式
+    for (let row = 1; row <= 4; row++) {
+      const t = row / 5;
+      const y = 288 + t * 234;
+      const left = 91 - t * 73; const right = 909 + t * 73;
+      ctx.strokeStyle = `rgba(166,148,203,${.14 - t * .025})`; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+    }
+    for (let i = 1; i < CONFIG.laneCount; i++) {
+      const ratio = i / CONFIG.laneCount;
+      const xTop = 91 + ratio * 818;
+      const xBottom = 18 + ratio * 964;
+      ctx.strokeStyle = 'rgba(179,160,218,.18)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(xTop, 288); ctx.lineTo(xBottom, 522); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(151,120,224,.18)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(110, 302); ctx.lineTo(890, 302); ctx.stroke();
+  }
+
+  function lanePolygon(index) {
+    const t = index / CONFIG.laneCount;
+    const topLeft = 91 + t * 818;
+    const topRight = 91 + (t + 1 / CONFIG.laneCount) * 818;
+    const bottomLeft = 18 + t * 964;
+    const bottomRight = 18 + (t + 1 / CONFIG.laneCount) * 964;
+    return [[topLeft + 2, 292], [topRight - 2, 292], [bottomRight - 3, 516], [bottomLeft + 3, 516]];
+  }
+
+  function drawLaneStates() {
+    for (let lane = 0; lane < CONFIG.laneCount; lane++) {
+      const polygon = lanePolygon(lane);
+      const attacked = Boolean(game.struck[lane]);
+      const target = game.targetLane === lane && ['warning', 'attacking'].includes(game.state);
+      const collapsing = game.state === 'collapsing';
+      const showHints = ui.hintMode.value === 'guided';
+      ctx.beginPath(); polygon.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath();
+      if (target) {
+        ctx.fillStyle = game.state === 'attacking' ? 'rgba(255,109,141,.32)' : `rgba(255,109,141,${.10 + Math.abs(Math.sin(game.elapsed * 10)) * .12})`;
+        ctx.fill();
+      } else if (attacked && (showHints || collapsing || game.state === 'dodge' || game.state === 'roundResult')) {
+        ctx.fillStyle = collapsing ? 'rgba(89,220,184,.28)' : 'rgba(89,220,184,.12)'; ctx.fill();
+      } else if (collapsing && !attacked) {
+        ctx.fillStyle = 'rgba(255,83,125,.26)'; ctx.fill();
+      }
+      if (target) {
+        ctx.strokeStyle = '#ff7899'; ctx.lineWidth = 2.5; ctx.stroke();
+        ctx.fillStyle = '#ffd5df'; ctx.font = 'bold 13px "Microsoft JhengHei", sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(game.state === 'warning' ? '攻擊預告' : '!', laneCenter(lane), 319);
+      } else if (attacked && showHints) {
+        ctx.strokeStyle = 'rgba(125,220,197,.48)'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.fillStyle = '#9cebd8'; ctx.font = 'bold 12px "Microsoft JhengHei", sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('已劈砍', laneCenter(lane), 319);
+      } else if (collapsing && !attacked) {
+        ctx.strokeStyle = 'rgba(255,109,141,.8)'; ctx.lineWidth = 1.7; ctx.stroke();
+        ctx.fillStyle = '#ff9db2'; ctx.font = 'bold 12px "Microsoft JhengHei", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('危險', laneCenter(lane), 319);
+      }
+      if (collapsing && !attacked) drawCrackInLane(lane);
+      if (collapsing && attacked) drawSafeSigil(lane);
+    }
+  }
+
+  function drawCrackInLane(lane) {
+    const center = laneCenter(lane); const y = 410;
+    if (assets.crack) { ctx.save(); ctx.globalAlpha = .68; ctx.drawImage(assets.crack, center - 55, y - 55, 110, 110); ctx.restore(); }
+    ctx.save(); ctx.translate(center, y); ctx.rotate((lane % 2 ? 1 : -1) * .13);
+    ctx.strokeStyle = `rgba(255,126,159,${.58 + Math.sin(game.elapsed * 23) * .12})`; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-25, -46); ctx.lineTo(-8, -20); ctx.lineTo(-16, 1); ctx.lineTo(4, 12); ctx.lineTo(17, 42); ctx.moveTo(4, 12); ctx.lineTo(20, 0); ctx.lineTo(27, -27); ctx.moveTo(-8, -20); ctx.lineTo(7, -30); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawSafeSigil(lane) {
+    const x = laneCenter(lane); const y = 424;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(game.elapsed * .18);
+    ctx.strokeStyle = `rgba(125,220,197,${.55 + Math.sin(game.elapsed * 6) * .12})`; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, 0, 23, 0, Math.PI * 2); ctx.moveTo(-31, 0); ctx.lineTo(31, 0); ctx.moveTo(0, -31); ctx.lineTo(0, 31); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawSpiderLeg() {
+    if (!['warning', 'attacking'].includes(game.state) || game.targetLane === null) return;
+    const progress = game.state === 'warning' ? 0 : 1 - Math.max(0, game.timer) / CONFIG.attackDuration;
+    const x = laneCenter(game.targetLane);
+    const y = game.state === 'warning' ? -178 + Math.sin(game.elapsed * 6) * 5 : -178 + progress * 270;
+    const width = 166; const height = 345;
+    if (assets.spiderLeg) {
+      ctx.save(); ctx.translate(x - width / 2, y); ctx.globalAlpha = game.state === 'warning' ? .82 : 1;
+      ctx.drawImage(assets.spiderLeg, 0, 0, width, height); ctx.restore();
+    } else {
+      drawFallbackSpiderLeg(x, y, progress);
+    }
+    if (game.state === 'warning') {
+      ctx.save(); ctx.strokeStyle = `rgba(255,109,141,${.4 + Math.sin(game.elapsed * 12) * .2})`; ctx.lineWidth = 2;
+      ctx.setLineDash([8, 6]); ctx.beginPath(); ctx.moveTo(x, 284); ctx.lineTo(x, 440); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+    }
+  }
+
+  function drawFallbackSpiderLeg(x, y, progress) {
+    ctx.save(); ctx.translate(x, y); ctx.strokeStyle = '#4b365e'; ctx.lineWidth = 21; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-12, 78); ctx.lineTo(20, 155); ctx.lineTo(-8, 222); ctx.lineTo(18, 282); ctx.stroke();
+    ctx.strokeStyle = '#a88ae5'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-2, 4); ctx.lineTo(-12, 78); ctx.lineTo(20, 155); ctx.lineTo(-8, 222); ctx.lineTo(18, 282); ctx.stroke();
+    [[-12,78],[20,155],[-8,222]].forEach(([jx,jy]) => { ctx.fillStyle='#9b7bd8'; ctx.beginPath(); ctx.arc(jx,jy,10,0,Math.PI*2); ctx.fill(); });
+    ctx.fillStyle = '#e5c8ff'; ctx.beginPath(); ctx.moveTo(18,282); ctx.lineTo(43,306); ctx.lineTo(25,302); ctx.lineTo(7,287); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawPlayer() {
+    const x = game.playerX;
+    const y = game.state === 'collapsing' && game.currentRoundResult?.safe ? 453 : 455;
+    const flicker = game.invincible > 0 && Math.floor(game.elapsed * 18) % 2 === 0;
+    if (flicker) return;
+    const runFrames = assets.runFrames || [];
+    let sprite = assets.idle;
+    if (game.playerMoving && runFrames.length) sprite = runFrames[Math.floor(game.runClock / .105) % runFrames.length];
+    if (game.invincible > 0 && assets.hurt) sprite = assets.hurt;
+    if (sprite) {
+      const targetH = 88; const ratio = sprite.width / sprite.height; const targetW = targetH * ratio;
+      ctx.save();
+      if (game.playerFacing < 0) { ctx.translate(x, 0); ctx.scale(-1, 1); ctx.translate(-x, 0); }
+      ctx.drawImage(sprite, x - targetW / 2, y - targetH + 8, targetW, targetH);
+      ctx.restore();
+    } else {
+      drawPlaceholderCharacter(x, y, game.playerFacing, game.playerMoving);
+    }
+    // 玩家所在區域的薄型定位環
+    if (!['idle', 'finished'].includes(game.state)) {
+      ctx.save(); ctx.strokeStyle = 'rgba(102,217,232,.62)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.ellipse(x, 472, 23, 7, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    }
+  }
+
+  function drawPlaceholderCharacter(x, y, facing, moving) {
+    const step = moving ? Math.sin(game.runClock * 17) * 6 : 0;
+    ctx.save(); ctx.translate(x, y);
+    if (facing < 0) ctx.scale(-1, 1);
+    // 原創占位冒險者，非遊戲角色素材
+    ctx.fillStyle = 'rgba(0,0,0,.36)'; ctx.beginPath(); ctx.ellipse(0, -1, 23, 7, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#45305f'; ctx.beginPath(); ctx.moveTo(-12,-61); ctx.lineTo(7,-64); ctx.lineTo(19,-14); ctx.lineTo(4,-20); ctx.lineTo(-5,-42); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#9c7cdf'; ctx.beginPath(); ctx.moveTo(-13,-57); ctx.lineTo(10,-58); ctx.lineTo(8,-27); ctx.lineTo(-9,-27); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#d7b6ff'; ctx.fillRect(-8,-73,19,20);
+    ctx.fillStyle = '#30243f'; ctx.fillRect(-10,-77,22,10); ctx.fillRect(3,-73,14,5);
+    ctx.fillStyle = '#211a30'; ctx.fillRect(-7,-30,7,23+step); ctx.fillRect(2,-30,7,23-step);
+    ctx.fillStyle = '#9edee8'; ctx.fillRect(-8,-8+step,10,5); ctx.fillRect(2,-8-step,10,5);
+    ctx.strokeStyle = '#c1a4ff'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-11,-49); ctx.lineTo(-20,-32-step*.4); ctx.moveTo(9,-49); ctx.lineTo(17,-37+step*.4); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawParticles() {
+    game.particles.forEach((particle) => {
+      ctx.save(); ctx.globalAlpha = Math.max(0, particle.life / particle.maxLife); ctx.fillStyle = particle.color;
+      ctx.beginPath(); ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    });
+  }
+
+  function drawSceneText() {
+    if (game.state === 'countdown') {
+      ctx.save(); ctx.textAlign = 'center'; ctx.font = '900 64px system-ui, sans-serif'; ctx.fillStyle = 'rgba(244,241,255,.93)'; ctx.shadowColor = '#a78bfa'; ctx.shadowBlur = 25;
+      ctx.fillText(String(Math.max(1, Math.ceil(game.timer))), 500, 204); ctx.restore();
+    }
+    if (game.state === 'dodge') {
+      ctx.save();
+      ctx.fillStyle = 'rgba(10,7,19,.76)'; roundedRect(ctx, 330, 222, 340, 52, 13); ctx.fill();
+      ctx.strokeStyle = 'rgba(246,201,121,.55)'; ctx.stroke();
+      ctx.fillStyle = '#f6c979'; ctx.textAlign = 'center'; ctx.font = 'bold 18px "Microsoft JhengHei", sans-serif'; ctx.fillText('鏡面龜裂倒數', 500, 244);
+      ctx.fillStyle = '#fff0cf'; ctx.font = '800 26px Consolas, monospace'; ctx.fillText(Math.max(0, game.timer).toFixed(1), 500, 264);
+      ctx.restore();
+    }
+    if (game.state === 'collapsing' || game.state === 'roundResult') {
+      const safe = Boolean(game.currentRoundResult?.safe);
+      ctx.save(); ctx.textAlign = 'center'; ctx.font = '900 27px "Microsoft JhengHei", sans-serif';
+      ctx.fillStyle = safe ? '#a8ffe8' : '#ff9db2'; ctx.shadowColor = safe ? '#4ddcb7' : '#ff476f'; ctx.shadowBlur = 18;
+      ctx.fillText(safe ? 'SAFE ZONE' : 'DANGER ZONE', 500, 235); ctx.restore();
+    }
+  }
+
+  function roundedRect(context, x, y, width, height, radius) {
+    const r = Math.min(radius, width / 2, height / 2);
+    context.beginPath(); context.moveTo(x + r, y); context.arcTo(x + width, y, x + width, y + height, r);
+    context.arcTo(x + width, y + height, x, y + height, r); context.arcTo(x, y + height, x, y, r); context.arcTo(x, y, x + width, y, r); context.closePath();
+  }
+
+  // ========================
+  // 3. 操作事件與初始化
+  // ========================
+  function setMove(direction, isDown) {
+    touchDirection[direction] = isDown;
+    if (isDown) canvas.focus({ preventScroll: true });
+  }
+  function bindTouchButton(button, direction) {
+    button.addEventListener('pointerdown', (event) => { event.preventDefault(); button.setPointerCapture?.(event.pointerId); setMove(direction, true); });
+    ['pointerup', 'pointercancel', 'lostpointercapture', 'pointerleave'].forEach((type) => button.addEventListener(type, () => setMove(direction, false)));
+  }
+
+  document.addEventListener('keydown', (event) => {
+    const key = event.key;
+    if (['ArrowLeft', 'ArrowRight', ' '].includes(key)) event.preventDefault();
+    if (event.repeat && ['p', 'P', 'Escape', 'r', 'R'].includes(key)) return;
+    keys.add(key);
+    if (key === 'p' || key === 'P' || key === 'Escape') {
+      if (game.state === 'paused') resumeGame(); else pauseGame();
+    } else if ((key === 'r' || key === 'R') && !['idle', 'finished'].includes(game.state)) {
+      removeResultExtras(); startGame();
+    }
+  });
+  document.addEventListener('keyup', (event) => keys.delete(event.key));
+  window.addEventListener('blur', () => { keys.clear(); touchDirection.left = false; touchDirection.right = false; if (!['idle', 'finished', 'paused'].includes(game.state)) pauseGame(); });
+  bindTouchButton(ui.touchLeft, 'left'); bindTouchButton(ui.touchRight, 'right');
+
+  canvas.addEventListener('pointerdown', (event) => {
+    // 點擊地板可快速移動作為輔助操作；正式練習仍建議使用方向鍵。
+    if (['idle', 'paused', 'finished'].includes(game.state)) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = (event.clientX - rect.left) * CONFIG.width / rect.width;
+    const y = (event.clientY - rect.top) * CONFIG.height / rect.height;
+    if (y > 320 && y < 520) {
+      const lane = laneAtX(x);
+      game.playerX = laneCenter(lane);
+      if (game.state === 'dodge' && game.struck[lane] && game.safeReachMs === null) game.safeReachMs = Math.round(performance.now() - game.dodgeStartedAt);
+    }
+  });
+
+  ui.overlayStart.addEventListener('click', startGame);
+  ui.startBtn.addEventListener('click', () => {
+    if (!['idle', 'finished'].includes(game.state) && !window.confirm('目前這一輪練習會重設，確定重新開始嗎？')) return;
+    startGame();
+  });
+  ui.restartBtn.addEventListener('click', () => { removeResultExtras(); startGame(); });
+  ui.pauseBtn.addEventListener('click', () => { if (game.state === 'paused') resumeGame(); else pauseGame(); });
+  ui.strikeCount.addEventListener('change', () => {
+    if (['idle', 'finished'].includes(game.state)) game.attackCount = Number(ui.strikeCount.value);
+    else showToast('攻擊次數將於下一次挑戰生效。');
+    syncHud();
+  });
+  ui.roundCount.addEventListener('change', () => {
+    if (['idle', 'finished'].includes(game.state)) game.roundTotal = Number(ui.roundCount.value);
+    else showToast('練習輪數將於下一次挑戰生效。');
+    syncHud();
+  });
+  ui.difficulty.addEventListener('change', () => showToast(`已切換為${ui.difficulty.selectedOptions[0].textContent}`));
+  ui.sequenceMode.addEventListener('change', () => showToast(ui.sequenceMode.value === 'fixed' ? '已切換成固定攻擊序列。' : '每輪會重新抽取攻擊序列。'));
+  ui.hintMode.addEventListener('change', () => { updateLaneMap(); showToast(ui.hintMode.value === 'guided' ? '已開啟攻擊紀錄提示。' : '已降低輔助標記。'); });
+
+  ui.soundBtn.addEventListener('click', () => {
+    soundEnabled = !soundEnabled;
+    ui.soundBtn.setAttribute('aria-pressed', String(soundEnabled));
+    ui.soundBtn.textContent = soundEnabled ? '♫' : '♪̸';
+    showToast(soundEnabled ? '提示音已開啟。' : '提示音已關閉。');
+    if (soundEnabled) playTone(660, .08);
+  });
+
+  ui.fullscreenBtn.addEventListener('click', async () => {
+    const panel = ui.gamePanel;
+    if (document.fullscreenElement) {
+      await document.exitFullscreen().catch(() => {});
+      panel.classList.remove('fake-fullscreen'); document.body.classList.remove('fullscreen-mode');
+      return;
+    }
+    if (panel.requestFullscreen) {
+      try { await panel.requestFullscreen(); return; } catch (error) { console.warn('原生全螢幕不可用，改用版面放大。', error); }
+    }
+    panel.classList.toggle('fake-fullscreen');
+    document.body.classList.toggle('fullscreen-mode', panel.classList.contains('fake-fullscreen'));
+  });
+  document.addEventListener('fullscreenchange', () => {
+    const active = Boolean(document.fullscreenElement);
+    ui.fullscreenBtn.textContent = active ? '⤢' : '⛶';
+    ui.fullscreenBtn.title = active ? '離開全螢幕' : '放大遊戲畫面';
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !document.fullscreenElement && ui.gamePanel.classList.contains('fake-fullscreen')) {
+      ui.gamePanel.classList.remove('fake-fullscreen'); document.body.classList.remove('fullscreen-mode');
+    }
+  });
+
+  function loop(timestamp) {
+    if (!lastFrame) lastFrame = timestamp;
+    const dt = Math.max(0, (timestamp - lastFrame) / 1000);
+    lastFrame = timestamp;
+    update(dt);
+    draw();
+    animationFrameId = requestAnimationFrame(loop);
+  }
+
+  async function init() {
+    updateLaneMap(); syncHud();
+    await loadAssets();
+    // Ensure the game always opens into the start overlay. Missing art uses vector fallbacks.
+    if (!assets.background) console.warn('背景素材未載入，將使用 Canvas 備援背景。');
+    if (!assets.spiderLeg) console.warn('蜘蛛腳素材未載入，將使用 Canvas 備援圖形。');
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    animationFrameId = requestAnimationFrame(loop);
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
