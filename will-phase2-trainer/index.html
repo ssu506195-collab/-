@@ -1,0 +1,1138 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b0914">
+<meta name="description" content="原創鏡界場景的威爾第二階段走位訓練小遊戲。">
+<title>鏡界裂痕｜第二階段走位訓練器</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0b0914;
+    --panel: #171326;
+    --panel-2: #211b35;
+    --panel-3: #29233e;
+    --line: rgba(183, 159, 229, .18);
+    --line-strong: rgba(183, 159, 229, .35);
+    --text: #f4f1ff;
+    --muted: #b5aec9;
+    --purple: #a78bfa;
+    --purple-deep: #7153b8;
+    --cyan: #66d9e8;
+    --safe: #7ddcc5;
+    --danger: #ff6d8d;
+    --warning: #f6c979;
+    --radius: 16px;
+    --shadow: 0 18px 48px rgba(0, 0, 0, .28);
+  }
+  * { box-sizing: border-box; }
+  html { min-width: 320px; background: var(--bg); }
+  body {
+    margin: 0; min-height: 100vh; color: var(--text);
+    font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif;
+    background:
+      radial-gradient(ellipse at 10% 0%, rgba(113,83,184,.18), transparent 34rem),
+      radial-gradient(ellipse at 100% 34%, rgba(66,95,145,.13), transparent 32rem),
+      var(--bg);
+  }
+  button, select, input { font: inherit; }
+  button { cursor: pointer; }
+  button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+  .site-header { width: min(1440px, 100%); margin: 0 auto; padding: 22px 26px 16px; display: flex; align-items: center; gap: 16px; }
+  .brand-mark { flex: 0 0 46px; width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: linear-gradient(145deg, #3a2b63, #171326); border: 1px solid rgba(190,167,255,.3); box-shadow: inset 0 1px rgba(255,255,255,.08), 0 6px 22px rgba(95,64,160,.18); font-size: 24px; }
+  .brand-copy { min-width: 0; flex: 1; }
+  .brand-copy h1 { margin: 0; font-size: clamp(20px, 2.5vw, 27px); line-height: 1.2; letter-spacing: .04em; font-weight: 850; }
+  .brand-copy p { margin: 5px 0 0; color: var(--muted); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; }
+  .header-actions { display: flex; gap: 8px; }
+  .icon-button, .button { border: 1px solid var(--line-strong); background: rgba(36,29,55,.86); color: var(--text); border-radius: 10px; min-height: 40px; padding: 9px 13px; transition: background .15s ease, transform .15s ease, border-color .15s ease; }
+  .icon-button { min-width: 42px; font-size: 16px; }
+  .icon-button:hover, .button:hover { background: #33274d; border-color: rgba(190,167,255,.55); }
+  .button:active, .icon-button:active { transform: translateY(1px); }
+  .button.primary { background: linear-gradient(135deg, #8768d6, #6449ac); border-color: #a892ef; box-shadow: 0 7px 22px rgba(109,76,190,.18); }
+  .button.primary:hover { background: linear-gradient(135deg, #9b7de8, #7256bc); }
+  .button.danger { border-color: rgba(255,109,141,.32); color: #ff9cb0; background: rgba(97,31,57,.35); }
+  .button.quiet { background: transparent; }
+  .button:disabled { opacity: .42; cursor: not-allowed; }
+  .page-wrap { width: min(1440px, 100%); padding: 0 26px 34px; margin: 0 auto; }
+  .intro-strip { border: 1px solid var(--line); background: linear-gradient(105deg, rgba(34,27,55,.83), rgba(20,17,32,.74)); border-radius: 14px; padding: 12px 16px; display: flex; gap: 13px; align-items: center; margin-bottom: 16px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+  .intro-icon { color: var(--warning); font-size: 17px; }
+  .intro-strip strong { color: var(--text); }
+  .game-layout { display: grid; grid-template-columns: minmax(0, 1fr) 308px; gap: 16px; align-items: start; }
+  .game-column { min-width: 0; }
+  .panel { background: linear-gradient(155deg, rgba(28,23,45,.96), rgba(19,16,31,.98)); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .stage-topbar { display: flex; gap: 14px; align-items: center; justify-content: space-between; padding: 15px 17px 14px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.015); }
+  .stage-title { min-width: 0; }
+  .eyebrow { font-size: 10px; color: var(--purple); font-weight: 800; letter-spacing: .17em; text-transform: uppercase; }
+  .stage-title h2 { margin: 4px 0 0; font-size: 17px; letter-spacing: .025em; }
+  .phase-chip { white-space: nowrap; padding: 6px 10px; border: 1px solid rgba(167,139,250,.27); background: rgba(113,83,184,.13); border-radius: 999px; color: #d5c5ff; font-size: 11px; }
+  .hud-row { padding: 12px 15px; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; border-bottom: 1px solid var(--line); }
+  .hud-stat { min-width: 0; padding: 8px 10px; background: rgba(255,255,255,.025); border: 1px solid rgba(183,159,229,.09); border-radius: 10px; }
+  .hud-stat span { display: block; color: var(--muted); font-size: 11px; }
+  .hud-stat strong { display: block; margin-top: 4px; font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hud-stat strong.timer { color: var(--warning); }
+  .hud-stat strong.lives { color: #ff8da7; letter-spacing: .06em; }
+  .canvas-wrap { position: relative; width: 100%; background: #0b0914; isolation: isolate; }
+  #gameCanvas { display: block; width: 100%; height: auto; aspect-ratio: 1000 / 560; touch-action: manipulation; background: #100c1c; }
+  .game-overlay { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; padding: 18px; overflow: auto; background: rgba(7,5,14,.54); backdrop-filter: blur(5px); }
+  .game-overlay[hidden] { display: none; }
+  .overlay-card { width: min(410px, 100%); max-height: calc(100vh - 40px); overflow: auto; padding: 23px 22px; border: 1px solid rgba(190,167,255,.36); background: linear-gradient(145deg, rgba(31,24,51,.97), rgba(14,12,24,.98)); border-radius: 17px; box-shadow: 0 24px 70px rgba(0,0,0,.44); text-align: center; }
+  .overlay-kicker { color: var(--cyan); font-size: 10px; font-weight: 800; letter-spacing: .18em; }
+  .overlay-card h3 { margin: 8px 0; font-size: 24px; }
+  .overlay-card p { color: var(--muted); font-size: 13px; line-height: 1.75; margin: 0 0 15px; }
+  .overlay-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+  .overlay-results { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 16px 0; }
+  .overlay-result { padding: 10px 6px; border-radius: 10px; background: rgba(255,255,255,.035); border: 1px solid var(--line); }
+  .overlay-result span { display: block; font-size: 11px; color: var(--muted); }
+  .overlay-result strong { display: block; margin-top: 4px; font-size: 19px; }
+  .stage-footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 15px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+  .key-hints { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  kbd { font-family: Consolas, monospace; font-size: 11px; color: var(--text); padding: 3px 6px; background: rgba(255,255,255,.06); border: 1px solid rgba(190,167,255,.2); border-radius: 5px; box-shadow: inset 0 -1px rgba(0,0,0,.35); }
+  .touch-controls { display: none; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px 13px 14px; }
+  .touch-controls .button { user-select: none; touch-action: none; font-size: 20px; min-height: 48px; }
+  .side-column { display: grid; gap: 14px; }
+  .side-panel { padding: 16px; }
+  .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 13px; }
+  .panel-heading h3 { margin: 0; font-size: 15px; }
+  .panel-heading span { color: var(--muted); font-size: 10px; letter-spacing: .12em; }
+  .form-field { margin-bottom: 13px; }
+  .form-field:last-child { margin-bottom: 0; }
+  .form-field label { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; color: var(--muted); font-size: 12px; }
+  .form-field label small { color: #8d84a7; }
+  select { width: 100%; min-height: 39px; color: var(--text); border: 1px solid var(--line-strong); border-radius: 9px; padding: 8px 10px; background: #211b35; }
+  .settings-note { margin: 12px 0 0; color: #948ba9; font-size: 11px; line-height: 1.65; }
+  .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .action-grid .wide { grid-column: 1 / -1; }
+  .round-map { display: grid; grid-template-columns: repeat(7,1fr); gap: 5px; }
+  .lane-chip { height: 34px; border: 1px solid var(--line); background: rgba(255,255,255,.025); border-radius: 8px; color: #948ba9; display: grid; place-items: center; font-size: 11px; position: relative; }
+  .lane-chip.safe { border-color: rgba(125,220,197,.45); background: rgba(65,156,133,.14); color: var(--safe); }
+  .lane-chip.danger { border-color: rgba(255,109,141,.44); background: rgba(160,45,75,.14); color: #ff99b0; }
+  .lane-chip.target { outline: 2px solid var(--warning); outline-offset: 1px; color: var(--warning); }
+  .lane-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; color: var(--muted); font-size: 11px; }
+  .legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+  .legend-dot.safe { background: var(--safe); } .legend-dot.danger { background: var(--danger); } .legend-dot.target { background: var(--warning); }
+  .log-list { display: grid; gap: 7px; min-height: 32px; }
+  .log-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 9px; border-radius: 8px; background: rgba(255,255,255,.025); font-size: 11px; }
+  .log-row .log-name { color: var(--muted); }
+  .log-row strong { font-size: 11px; font-weight: 700; }
+  .log-row .status-safe { color: var(--safe); } .log-row .status-danger { color: var(--danger); } .log-row .status-wait { color: #938aa8; }
+  .empty-log { color: #8d84a7; font-size: 12px; line-height: 1.6; padding: 4px 0; }
+  .mini-tutorial { padding: 13px 15px; }
+  .mini-tutorial h3 { margin: 0 0 9px; font-size: 14px; }
+  .mini-tutorial ol { padding-left: 20px; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.8; }
+  .mini-tutorial li + li { margin-top: 4px; }
+  .asset-note { padding: 13px 15px; background: rgba(102,217,232,.045); border: 1px solid rgba(102,217,232,.14); border-radius: 12px; }
+  .asset-note h3 { margin: 0 0 6px; font-size: 13px; color: var(--cyan); }
+  .asset-note p { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.7; }
+  .asset-note code { color: #e4dcff; overflow-wrap: anywhere; }
+  .footer-note { margin: 18px 4px 0; display: flex; gap: 10px; justify-content: space-between; color: #776e8d; font-size: 10px; line-height: 1.7; }
+  .footer-note a { color: #a89bc7; }
+  .toast { position: fixed; z-index: 50; bottom: 18px; left: 50%; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; background: #211b35; border: 1px solid var(--line-strong); border-radius: 10px; padding: 11px 15px; box-shadow: var(--shadow); font-size: 12px; transition: opacity .2s, transform .2s; max-width: calc(100vw - 30px); }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  body.fullscreen-mode { overflow: hidden; }
+  .game-panel.fake-fullscreen { position: fixed; z-index: 100; inset: 10px; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line-strong); border-radius: 16px; }
+  .game-panel.fake-fullscreen .stage-topbar, .game-panel.fake-fullscreen .hud-row, .game-panel.fake-fullscreen .stage-footer, .game-panel.fake-fullscreen .touch-controls { flex-shrink: 0; }
+  .game-panel.fake-fullscreen .canvas-wrap { flex: 1; min-height: 0; display: grid; place-items: center; }
+  .game-panel.fake-fullscreen #gameCanvas { width: auto; height: 100%; max-width: 100%; object-fit: contain; }
+  @media (max-width: 1050px) {
+    .game-layout { grid-template-columns: minmax(0, 1fr) 270px; gap: 12px; }
+    .page-wrap, .site-header { padding-left: 18px; padding-right: 18px; }
+    .side-panel { padding: 13px; }
+    .hud-row { padding: 10px; }
+  }
+  @media (max-width: 820px) {
+    .game-layout { grid-template-columns: minmax(0,1fr); }
+    .side-column { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; }
+    .side-column .asset-note { grid-column: 1 / -1; }
+    .touch-controls { display: grid; }
+  }
+  @media (max-width: 560px) {
+    .site-header { padding: 15px 13px 12px; gap: 10px; }
+    .brand-mark { width: 39px; height: 39px; flex-basis: 39px; border-radius: 12px; font-size: 20px; }
+    .brand-copy h1 { font-size: 19px; }
+    .brand-copy p { font-size: 8px; letter-spacing: .1em; }
+    .header-actions { gap: 5px; }
+    .icon-button { min-width: 37px; min-height: 37px; padding: 7px; }
+    .page-wrap { padding: 0 10px 24px; }
+    .intro-strip { padding: 10px 11px; margin-bottom: 10px; font-size: 11px; border-radius: 11px; }
+    .stage-topbar { padding: 12px 11px; gap: 7px; }
+    .stage-title h2 { font-size: 14px; }
+    .phase-chip { font-size: 9px; padding: 5px 7px; }
+    .hud-row { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 5px; padding: 7px; }
+    .hud-stat { padding: 7px 6px; border-radius: 7px; }
+    .hud-stat span { font-size: 9px; }
+    .hud-stat strong { font-size: 13px; }
+    .game-overlay { padding: 10px; }
+    .overlay-card { padding: 17px 14px; }
+    .overlay-card h3 { font-size: 21px; }
+    .overlay-card p { font-size: 12px; }
+    .stage-footer { padding: 9px 10px; font-size: 10px; }
+    .side-column { grid-template-columns: minmax(0,1fr); }
+    .side-column .asset-note { grid-column: auto; }
+    .side-panel { padding: 14px; }
+    .footer-note { display: block; margin: 14px 2px 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+  }
+</style>
+
+<style>
+  .mode-prompt { color: var(--muted); font-size: 11px; line-height: 1.65; margin: -3px 0 10px; }
+  .mode-buttons { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 6px; }
+  .mode-choice { min-height: 36px; border: 1px solid var(--line-strong); border-radius: 8px; background: rgba(255,255,255,.025); color: #d5c5ff; font-weight: 800; transition: .15s ease; }
+  .mode-choice:hover { background: rgba(167,139,250,.14); border-color: var(--purple); }
+  .mode-choice.selected { color: #fff2ca; border-color: var(--warning); background: rgba(246,201,121,.13); box-shadow: inset 0 0 0 1px rgba(246,201,121,.16); }
+  .mode-choice:disabled { opacity: .42; cursor: not-allowed; }
+  .mode-feedback { min-height: 35px; color: var(--muted); font-size: 11px; line-height: 1.6; margin: 10px 0 0; }
+  .mode-feedback strong { color: var(--warning); }
+  .lane-chip { display:flex; flex-direction:column; gap:2px; align-items:center; justify-content:center; height:44px; font-size:10px; }
+  .lane-chip .lane-mark { display:block; min-height:12px; font-size:10px; font-weight:900; color:var(--muted); }
+  .lane-chip.player { outline:2px solid var(--cyan); outline-offset:1px; color:#e6fbff; }
+  .lane-chip.foot { background:rgba(255,109,141,.13); border-color:rgba(255,109,141,.48); color:#ffabc0; }
+  .lane-chip.expected { box-shadow: inset 0 0 0 1px rgba(246,201,121,.55); color:var(--warning); }
+  .lane-legend { gap:8px 12px; }
+  .legend-dot.foot { background:var(--danger); }
+  .legend-dot.player { background:var(--cyan); }
+  .legend-dot.expected { background:var(--warning); }
+  .log-row { align-items:flex-start; }
+  .log-row > div { display:grid; gap:3px; }
+  .log-row .log-detail { color:var(--muted); font-size:10px; line-height:1.5; }
+  .log-row .status-good { color:var(--safe); }
+  .log-row .status-miss { color:var(--danger); }
+  .crack-status { display:inline-flex; align-items:center; gap:5px; }
+  .crack-status::before { content:""; width:7px; height:7px; border-radius:50%; background:currentColor; box-shadow:0 0 10px currentColor; }
+  .route-review { display:grid; gap:7px; margin:14px 0; text-align:left; }
+  .route-review-row { padding:9px 10px; border-radius:9px; border:1px solid var(--line); background:rgba(255,255,255,.025); font-size:11px; color:var(--muted); line-height:1.6; }
+  .route-review-row strong { color:var(--text); }
+  @media(max-width:560px) { .mode-buttons { grid-template-columns:repeat(5,minmax(0,1fr)); } .mode-choice { min-height:34px; } }
+</style>
+
+</head>
+<body>
+<header class="site-header">
+  <div class="brand-mark" aria-hidden="true">✣</div>
+  <div class="brand-copy">
+    <h1>鏡界裂痕</h1>
+    <p>MIRROR BREACH · PHASE II PATTERN TRAINER</p>
+  </div>
+  <div class="header-actions">
+    <button class="icon-button" id="soundBtn" type="button" aria-label="切換音效" aria-pressed="false" title="切換提示音">♫</button>
+    <button class="icon-button" id="fullscreenBtn" type="button" aria-label="切換遊戲畫面大小" title="放大遊戲畫面">⛶</button>
+  </div>
+</header>
+
+<main class="page-wrap">
+  <div class="intro-strip">
+    <span class="intro-icon" aria-hidden="true">✦</span>
+    <div><strong>訓練目標：</strong>每輪開頭先顯示第一戳的上下排蜘蛛腳排列與地板裂痕，提供約 2 秒辨識時間。玩家要在第一戳開始前選出模式，接著記住該模式的三次走位順序；每次戳擊後有 3 秒（可調整）移動時間。無裂痕時避開蜘蛛腳，有裂痕時站到蜘蛛腳落點接腳。記憶考驗模式不會在後兩戳前重播腳位。</div>
+  </div>
+
+  <div class="game-layout">
+    <section class="game-column" aria-label="遊戲區">
+      <div class="panel game-panel" id="gamePanel">
+        <div class="stage-topbar">
+          <div class="stage-title">
+            <div class="eyebrow">PHASE II · MIRROR FIELD</div>
+            <h2>虛假之鏡｜模式辨識與三連戳走位</h2>
+          </div>
+          <div class="phase-chip" id="phaseChip">等待開始</div>
+        </div>
+        <div class="hud-row" aria-live="polite">
+          <div class="hud-stat"><span>練習輪次</span><strong id="roundStat">— / 5</strong></div>
+          <div class="hud-stat"><span>戳擊進度</span><strong id="strikeStat">0 / 3</strong></div>
+          <div class="hud-stat"><span>下次戳擊</span><strong class="timer" id="timerStat">—</strong></div>
+          <div class="hud-stat"><span>生命狀態</span><strong class="lives" id="livesStat">♥ ♥ ♥</strong></div>
+        </div>
+        <div class="canvas-wrap" id="canvasWrap">
+          <canvas id="gameCanvas" width="1000" height="560" tabindex="0" aria-label="威爾第二階段模式辨識訓練。使用左右方向鍵或 A、D 移動。無裂痕時避開蜘蛛腳，有裂痕時接住指定腳位。"></canvas>
+          <div class="game-overlay" id="gameOverlay">
+            <div class="overlay-card" id="overlayCard">
+              <div class="overlay-kicker">PATTERN RECOGNITION TRAINING</div>
+              <h3 id="overlayTitle">準備進入鏡界</h3>
+              <p id="overlayText">每輪有三次蜘蛛腳戳擊。第一戳會揭示這輪的辨識線索：上下排蜘蛛腳分布，以及地板有沒有裂痕。你需要辨認模式，再在每次戳擊之間的倒數時間內完成走位。</p>
+              <div class="overlay-actions" id="overlayActions">
+                <button class="button primary" id="overlayStartBtn" type="button">開始練習</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="touch-controls" aria-label="觸控移動控制">
+          <button class="button" id="touchLeft" type="button" aria-label="向左移動">← 左移</button>
+          <button class="button" id="touchRight" type="button" aria-label="向右移動">右移 →</button>
+        </div>
+        <div class="stage-footer">
+          <div class="key-hints"><span>移動</span><kbd>←</kbd><kbd>→</kbd><kbd>A</kbd><kbd>D</kbd><span>辨識模式</span><kbd>數字鍵</kbd><span>暫停</span><kbd>P</kbd><kbd>Esc</kbd></div>
+          <div id="statusText" aria-live="polite">等待開始練習</div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side-column" aria-label="遊戲設定與資訊">
+      <section class="panel side-panel">
+        <div class="panel-heading"><h3>練習設定</h3><span>SETUP</span></div>
+        <div class="form-field">
+          <label for="patternSet">組合題庫</label>
+          <select id="patternSet">
+            <option value="chaos" selected>混沌模式：7 種組合（A–G）</option>
+            <option value="hard">困難模式：3 種組合（A、B、H）</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="roundCount">練習輪數</label>
+          <select id="roundCount">
+            <option value="3">3 輪</option>
+            <option value="5" selected>5 輪</option>
+            <option value="10">10 輪</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="difficulty">每次戳擊間隔</label>
+          <select id="difficulty">
+            <option value="easy">熟悉模式（4 秒）</option>
+            <option value="normal" selected>一般模式（3 秒）</option>
+            <option value="hard">快速模式（2 秒）</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="sequenceMode">模式出現順序</label>
+          <select id="sequenceMode">
+            <option value="random" selected>隨機抽取（不連續重複）</option>
+            <option value="cycle">依題庫順序輪替</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="hintMode">提示模式</label>
+          <select id="hintMode">
+            <option value="normal" selected>記憶考驗（後兩戳不預告腳位）</option>
+            <option value="guided">教學模式（預告後續腳位與目標）</option>
+          </select>
+        </div>
+        <div class="action-grid" aria-label="遊戲控制">
+          <button class="button primary wide" id="startBtn" type="button">開始練習</button>
+          <button class="button" id="pauseBtn" type="button">暫停／繼續</button>
+          <button class="button danger" id="restartBtn" type="button">重新開始</button>
+        </div>
+        <p class="settings-note">每輪固定三次戳擊。開局提供 2 秒辨識線索；首戳後及第二戳後的移動時間預設各 3 秒。記憶考驗模式不預告後兩戳的腳位；教學模式才提供預告。</p>
+      </section>
+
+      <section class="panel side-panel">
+        <div class="panel-heading"><h3>模式辨識</h3><span>GUESS</span></div>
+        <p class="mode-prompt">觀察第一戳的上下排腳位與裂痕，在首戳辨識倒數結束前選擇模式 A–G／H。第一戳後答案會鎖定；接下來要靠記憶完成第二、第三次走位。</p>
+        <div class="mode-buttons" id="modeButtons" aria-label="選擇本輪辨識模式"></div>
+        <div class="mode-feedback" id="modeFeedback">尚未開始。本輪模式答案會在回合結束後揭曉。</div>
+      </section>
+
+      <section class="panel side-panel">
+        <div class="panel-heading"><h3>七區腳位圖</h3><span>LANE MAP</span></div>
+        <div class="round-map" id="laneMap" aria-label="七個走位區域與蜘蛛腳位置"></div>
+        <div class="lane-legend">
+          <span><i class="legend-dot foot"></i>蜘蛛腳位置</span>
+          <span><i class="legend-dot player"></i>玩家位置</span>
+          <span><i class="legend-dot expected"></i>教學目標</span>
+        </div>
+      </section>
+
+      <section class="panel side-panel">
+        <div class="panel-heading"><h3>本輪戳擊紀錄</h3><span>ROUND LOG</span></div>
+        <div class="log-list" id="attackLog"><div class="empty-log">開始練習後會記錄每次戳擊的結果。建議走位與實際位置將在回合結束後顯示。</div></div>
+      </section>
+
+      <section class="panel mini-tutorial">
+        <h3>玩法核心</h3>
+        <ol>
+          <li>首戳是辨識線索：觀察上下排蜘蛛腳的位置和地面裂痕，於倒數結束前選擇模式。</li>
+          <li>無裂痕：躲開蜘蛛腳落點；有裂痕：站在蜘蛛腳落點接腳。</li>
+          <li>辨識答案在第一戳開始時鎖定；首戳後有 3 秒走位時間，第二、第三戳之間也是 3 秒。</li>
+          <li>以模式辨識正確率、三次走位正確率和受傷次數檢查自己的記憶。</li>
+        </ol>
+      </section>
+
+      <section class="asset-note">
+        <h3>自訂角色素材</h3>
+        <p>將透明 PNG 放進 <code>assets/character/</code>：<code>player-idle.png</code>、<code>run-1.png</code> 至 <code>run-6.png</code>，以及選用的 <code>player-hurt.png</code>。缺少圖片時會使用原創占位角色。</p>
+      </section>
+    </aside>
+  </div>
+
+  <div class="footer-note">
+    <span>原創練習專案｜非官方作品，與 NEXON／《楓之谷 M》無隸屬或背書關係。</span>
+    <span>GitHub Pages：單一 <code>index.html</code> + <code>assets/</code> 相對路徑</span>
+  </div>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+(() => {
+  'use strict';
+
+  // ============================================================
+  // 1. 核心設定：每輪三次戳擊、預設每次間隔 3 秒
+  // ============================================================
+  const CONFIG = {
+    width: 1000, height: 560, laneCount: 7,
+    floorLeft: 48, floorRight: 952,
+    startLives: 3,
+    moveSpeed: 360,
+    hitTopRadius: 64,
+    hitBottomRadius: 46,
+    firstCueSeconds: 2.0,
+    strikeGapSeconds: 3.0,
+    easyGapSeconds: 4.0,
+    hardGapSeconds: 2.0,
+    strikeAnimationSeconds: 0.34,
+    roundResultSeconds: 1.35,
+    assets: {
+      background: './assets/scene/mirror-arena-bg.svg',
+      spiderLeg: './assets/spider/phase-leg.svg',
+      crack: './assets/effects/mirror-crack.svg',
+      idle: './assets/character/player-idle.png',
+      hurt: './assets/character/player-hurt.png',
+      runFrames: [
+        './assets/character/run-1.png', './assets/character/run-2.png',
+        './assets/character/run-3.png', './assets/character/run-4.png',
+        './assets/character/run-5.png', './assets/character/run-6.png'
+      ]
+    }
+  };
+
+  const LANE_NAMES = ['左外', '左中二', '左中', '中央', '右中', '右中二', '右外'];
+  // 將參考題庫的 POS + 微幅位移轉成七區間的浮點座標。
+  // 整數 0–6 對應 LL/L2/L1/M/R1/R2/RR；偏移保留腳位不完全對齊格線的特性。
+  const POS = { LL: 0, L2: 1, L1: 2, M: 3, R1: 4, R2: 5, RR: 6 };
+  const P = (name, offset = 0) => POS[name] + offset / 215;
+  const strike = (top, bottom, safe, noDeduct = false) => ({ top, bottom, safe, noDeduct });
+
+  // 8 組固定題型：A–G 對應混沌題庫；困難題庫使用 A、B 與 H。
+  // 只重建攻擊配置與規則，不使用參考網站的程式碼或遊戲圖片。
+  const PATTERNS = [
+    {
+      id: 'A', group: 'chaos', label: '困難混沌無地裂 1（中央 → 左中 → 中央）', crack: false,
+      strikes: [
+        strike([P('R1'), P('R2'), P('RR')], [P('LL'), P('L2'), P('L1')], 3),
+        strike([P('L2')], [P('LL', -150), P('M'), P('R1'), P('R2'), P('RR'), P('RR', 200)], 2),
+        strike([P('R1'), P('R2'), P('RR')], [P('LL'), P('L2'), P('L1')], 3)
+      ]
+    },
+    {
+      id: 'B', group: 'chaos', label: '困難混沌無地裂 2（中央 → 右中 → 右中二）', crack: false,
+      strikes: [
+        strike([P('L1', -50), P('LL'), P('R2')], [P('L2'), P('R1'), P('L2'), P('RR')], 3),
+        strike([P('L2', -50), P('M', -50), P('RR', -50)], [P('L1'), P('R2')], 4),
+        strike([P('R1', -50), P('L1', -50)], [P('M', -30), P('RR')], 5)
+      ]
+    },
+    {
+      id: 'C', group: 'chaos', label: '混沌無地裂 3（中央 → 右中二 → 右中）', crack: false,
+      strikes: [
+        strike([P('LL'), P('L1', -80)], [P('L2'), P('L1', 130), P('RR', 50)], 3),
+        strike([P('L2', -50), P('M', -130), P('M', 50)], [P('LL'), P('L1', -30), P('RR', -30)], 5),
+        strike([P('LL'), P('M', -120), P('R2', -90), P('RR', 50)], [P('RR', -50)], 4)
+      ]
+    },
+    {
+      id: 'D', group: 'chaos', label: '混沌無地裂 4（中央 → 左中二 → 左中二）', crack: false,
+      strikes: [
+        strike([P('L2', -50), P('R1', 90)], [P('LL', -70), P('M', -80), P('M', 100), P('RR', -80), P('RR', 80)], 3, true),
+        strike([P('LL', -100), P('M', -100), P('R1', -120), P('R2', -150)], [P('RR', -50)], 1),
+        strike([P('LL', -20), P('M', -80), P('R2', -10)], [P('R1', -90), P('R1', 90)], 1)
+      ]
+    },
+    {
+      id: 'E', group: 'chaos', label: '混沌地裂 1（中央 → 左中二 → 左外）', crack: true,
+      strikes: [
+        strike([P('RR', 30)], [P('M'), P('R1', 50), P('R2', 100)], 3),
+        strike([P('L2', 100)], [P('LL')], 1),
+        strike([P('L2', -50), P('R1')], [P('LL'), P('R1', -50)], 0)
+      ]
+    },
+    {
+      id: 'F', group: 'chaos', label: '混沌地裂 2（中央 → 右中二 → 中央）', crack: true,
+      strikes: [
+        strike([P('LL', -150), P('LL', 50)], [P('M'), P('R1')], 3),
+        strike([P('R1', 80), P('R2', 30)], [P('L2', -80), P('L2', 120)], 5),
+        strike([P('M', -30), P('R1', -40)], [P('LL', -150), P('LL', 50)], 3)
+      ]
+    },
+    {
+      id: 'G', group: 'chaos', label: '混沌地裂 3（中央 → 右中二 → 中央）', crack: true,
+      strikes: [
+        strike([P('LL'), P('R1', -80)], [P('LL', -100), P('M')], 3),
+        strike([P('LL', 70), P('R1', 70)], [P('L2', 70), P('R2', 50)], 5),
+        strike([P('M', -30), P('RR', 70)], [P('L1', -30), P('RR', -80)], 3)
+      ]
+    },
+    {
+      id: 'H', group: 'hard', label: '困難混沌有地裂（中央 → 右中二 → 中央）', crack: true,
+      strikes: [
+        strike([P('LL'), P('R1', -80)], [P('LL', -100), P('M')], 3),
+        strike([P('LL', 70), P('R1', 70)], [P('L2', 70), P('R2', 50)], 5),
+        strike([P('M', -30), P('RR', 70)], [P('L1', -30), P('RR', -80)], 3)
+      ]
+    }
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const canvas = $('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const ui = {
+    phase: $('phaseChip'), round: $('roundStat'), strikes: $('strikeStat'), timer: $('timerStat'),
+    lives: $('livesStat'), status: $('statusText'), overlay: $('gameOverlay'), overlayCard: $('overlayCard'),
+    overlayTitle: $('overlayTitle'), overlayText: $('overlayText'), overlayActions: $('overlayActions'),
+    overlayStart: $('overlayStartBtn'), startBtn: $('startBtn'), pauseBtn: $('pauseBtn'), restartBtn: $('restartBtn'),
+    laneMap: $('laneMap'), attackLog: $('attackLog'), patternSet: $('patternSet'), roundCount: $('roundCount'),
+    difficulty: $('difficulty'), sequenceMode: $('sequenceMode'), hintMode: $('hintMode'), toast: $('toast'),
+    soundBtn: $('soundBtn'), fullscreenBtn: $('fullscreenBtn'), gamePanel: $('gamePanel'), touchLeft: $('touchLeft'),
+    touchRight: $('touchRight'), modeButtons: $('modeButtons'), modeFeedback: $('modeFeedback')
+  };
+
+  const assets = {};
+  const keys = new Set();
+  const touch = { left: false, right: false };
+  let soundEnabled = false;
+  let audioContext = null;
+  let toastTimer = 0;
+  let lastFrame = 0;
+  let frameId = 0;
+
+  const game = {
+    state: 'idle', previousState: 'idle', timer: 0, elapsed: 0,
+    round: 0, roundTotal: 5, lives: CONFIG.startLives,
+    patternPool: [], pattern: null, patternCursor: 0, patternBag: [],
+    strikeIndex: -1, strikeResults: [], roundResults: [],
+    guessedPatternId: null, guessLocked: false,
+    playerX: 500, playerFacing: 1, playerMoving: false, runClock: 0,
+    strikeAnim: null, particles: [], shake: 0, directHits: 0, totalStrikes: 0,
+    currentRoundReview: null, lastMessage: '等待開始練習'
+  };
+
+  function loadImage(path) {
+    return new Promise((resolve) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => resolve(null);
+      image.src = path;
+    });
+  }
+  async function loadAssets() {
+    const entries = Object.entries(CONFIG.assets).filter(([key]) => key !== 'runFrames');
+    const loaded = await Promise.all(entries.map(async ([key, path]) => [key, await loadImage(path)]));
+    loaded.forEach(([key, image]) => { assets[key] = image; });
+    assets.runFrames = await Promise.all(CONFIG.assets.runFrames.map(loadImage));
+    assets.runFrames = assets.runFrames.filter(Boolean);
+    const hasCharacter = Boolean(assets.idle || assets.runFrames.length);
+    document.documentElement.dataset.customCharacter = hasCharacter ? 'true' : 'false';
+    if (hasCharacter) showToast('已讀取自訂角色素材。');
+  }
+
+  function gapSeconds() {
+    return ({ easy: CONFIG.easyGapSeconds, normal: CONFIG.strikeGapSeconds, hard: CONFIG.hardGapSeconds })[ui.difficulty.value] || CONFIG.strikeGapSeconds;
+  }
+  function poolForSetting() {
+    if (ui.patternSet.value === 'hard') return PATTERNS.filter((item) => ['A', 'B', 'H'].includes(item.id));
+    return PATTERNS.filter((item) => item.group === 'chaos');
+  }
+  function laneWidth() { return (CONFIG.floorRight - CONFIG.floorLeft) / CONFIG.laneCount; }
+  function laneCenter(index) { return CONFIG.floorLeft + (Math.max(0, Math.min(6, index)) + 0.5) * laneWidth(); }
+  function laneAtX(x) { return Math.max(0, Math.min(6, Math.floor((x - CONFIG.floorLeft) / laneWidth()))); }
+  function footX(coord) {
+    const step = laneWidth();
+    let x;
+    if (coord < 0) x = laneCenter(0) + coord * step;
+    else if (coord > 6) x = laneCenter(6) + (coord - 6) * step;
+    else { const base = Math.floor(coord); x = laneCenter(base) + (coord - base) * step; }
+    return Math.max(18, Math.min(CONFIG.width - 18, x));
+  }
+  function footIsNearPlayer(positions, radius) {
+    return positions.some((coord) => Math.abs(game.playerX - footX(coord)) <= radius);
+  }
+  function footTouchesLane(positions, laneIndex) {
+    return positions.some((coord) => laneAtX(footX(coord)) === laneIndex);
+  }
+  function laneName(index) { return LANE_NAMES[Math.max(0, Math.min(6, index))]; }
+  function shuffled(items) {
+    const list = [...items];
+    for (let i = list.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [list[i], list[j]] = [list[j], list[i]];
+    }
+    return list;
+  }
+  function choosePattern() {
+    if (ui.sequenceMode.value === 'cycle') {
+      const selected = game.patternPool[game.patternCursor % game.patternPool.length];
+      game.patternCursor += 1;
+      return selected;
+    }
+    if (!game.patternBag.length) game.patternBag = shuffled(game.patternPool);
+    if (game.patternBag.length > 1 && game.patternBag[game.patternBag.length - 1].id === game.pattern?.id) {
+      [game.patternBag[0], game.patternBag[game.patternBag.length - 1]] = [game.patternBag[game.patternBag.length - 1], game.patternBag[0]];
+    }
+    return game.patternBag.pop();
+  }
+
+  function showToast(message) {
+    ui.toast.textContent = message;
+    ui.toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => ui.toast.classList.remove('show'), 2100);
+  }
+  function setStatus(label, message) {
+    ui.phase.textContent = label;
+    ui.status.textContent = message;
+    ui.pauseBtn.textContent = game.state === 'paused' ? '繼續練習' : '暫停／繼續';
+    ui.startBtn.textContent = ['idle', 'finished'].includes(game.state) ? (game.state === 'finished' ? '再次挑戰' : '開始練習') : '重新開始挑戰';
+  }
+  function showOverlay({ title, text, actions, kicker = 'PATTERN RECOGNITION TRAINING' }) {
+    ui.overlayTitle.textContent = title;
+    ui.overlayText.textContent = text;
+    const oldKicker = ui.overlayCard.querySelector('.overlay-kicker');
+    if (oldKicker) oldKicker.textContent = kicker;
+    ui.overlayActions.replaceChildren();
+    actions.forEach(({ label, className = 'button', onClick }) => {
+      const button = document.createElement('button');
+      button.type = 'button'; button.className = className; button.textContent = label;
+      button.addEventListener('click', onClick); ui.overlayActions.appendChild(button);
+    });
+    ui.overlay.hidden = false;
+  }
+  function hideOverlay() { ui.overlay.hidden = true; }
+
+  function startGame() {
+    removeResultExtras();
+    game.roundTotal = Number(ui.roundCount.value) || 5;
+    game.patternPool = poolForSetting();
+    game.patternCursor = 0; game.patternBag = [];
+    game.round = 0; game.lives = CONFIG.startLives;
+    game.roundResults = []; game.directHits = 0; game.totalStrikes = 0;
+    game.elapsed = 0; game.playerX = laneCenter(3); game.playerFacing = 1;
+    game.particles = []; game.strikeAnim = null; game.shake = 0;
+    startRound(); hideOverlay(); canvas.focus({ preventScroll: true });
+    playTone(520, .08, 'sine'); syncHud();
+  }
+  function startRound() {
+    game.round += 1;
+    game.pattern = choosePattern();
+    game.state = 'firstWarning'; game.timer = CONFIG.firstCueSeconds;
+    game.strikeIndex = -1; game.strikeResults = [];
+    game.guessedPatternId = null; game.guessLocked = false; game.currentRoundReview = null; game._targetReachedForStrike = -1;
+    game.playerX = laneCenter(3); game.playerMoving = false; game.playerFacing = 1;
+    game.strikeAnim = null;
+    setStatus('觀察首戳線索', `第 ${game.round} 輪：辨認蜘蛛腳排列與地板裂痕`);
+    ui.modeFeedback.textContent = '辨識中：觀察上下排蜘蛛腳與地板裂痕，首戳倒數結束前選模式。';
+    renderModeButtons(); renderAttackLog(); updateLaneMap(); syncHud();
+  }
+
+  function renderModeButtons() {
+    ui.modeButtons.replaceChildren();
+    const options = game.patternPool.length ? game.patternPool : poolForSetting();
+    options.forEach((pattern, index) => {
+      const button = document.createElement('button');
+      button.type = 'button'; button.className = 'mode-choice'; button.textContent = pattern.id;
+      button.dataset.patternId = pattern.id;
+      button.title = `選擇模式 ${pattern.id}`;
+      button.setAttribute('aria-label', `選擇模式 ${pattern.id}，快捷鍵 ${index + 1}`);
+      button.addEventListener('click', () => chooseGuess(pattern.id));
+      ui.modeButtons.appendChild(button);
+    });
+    updateModeButtons();
+  }
+  function chooseGuess(id) {
+    if (!game.pattern || game.state !== 'firstWarning' || game.guessLocked) {
+      showToast('模式辨識只在首戳辨識倒數期間開放；第一戳開始後答案就會鎖定。'); return;
+    }
+    if (!game.patternPool.some((p) => p.id === id)) return;
+    game.guessedPatternId = id;
+    updateModeButtons();
+    ui.modeFeedback.textContent = `已選擇模式 ${id}；第一戳開始時將鎖定答案。`;
+    playTone(540, .05, 'sine');
+  }
+  function updateModeButtons() {
+    const locked = game.guessLocked || ['idle', 'finished', 'paused', 'roundResult'].includes(game.state) || game.state !== 'firstWarning';
+    [...ui.modeButtons.querySelectorAll('button')].forEach((button) => {
+      button.disabled = locked;
+      button.classList.toggle('selected', button.dataset.patternId === game.guessedPatternId);
+      button.setAttribute('aria-pressed', String(button.dataset.patternId === game.guessedPatternId));
+    });
+  }
+
+  function performStrike(index) {
+    game.strikeIndex = index;
+    const thisStrike = game.pattern.strikes[index];
+    const activeFeet = [...thisStrike.top, ...thisStrike.bottom];
+    const actualLane = laneAtX(game.playerX);
+    const inDangerZone = footIsNearPlayer(thisStrike.top, CONFIG.hitTopRadius) || footIsNearPlayer(thisStrike.bottom, CONFIG.hitBottomRadius);
+    const physicalSafe = game.pattern.crack ? inDangerZone : !inDangerZone;
+    const routeCorrect = actualLane === thisStrike.safe;
+    const noDeduct = Boolean(thisStrike.noDeduct);
+    const damaged = !physicalSafe && !noDeduct;
+    const result = {
+      index, expectedLane: thisStrike.safe, actualLane, physicalSafe, routeCorrect,
+      feet: [...activeFeet], hit: !physicalSafe, noDeduct, damaged, crack: game.pattern.crack,
+      elapsed: game.elapsed
+    };
+    game.strikeResults.push(result); game.totalStrikes += 1;
+    if (!physicalSafe) {
+      game.directHits += 1;
+      if (damaged) game.lives = Math.max(0, game.lives - 1);
+      game.shake = .28; spawnImpact(game.playerX, 455, true); playTone(130, .15, 'square');
+      game.lastMessage = noDeduct ? '蜘蛛腳碰撞，但本次設定不扣生命' : (game.pattern.crack ? '未站到蜘蛛腳落點，受到裂痕傷害' : '未避開蜘蛛腳落點，受到傷害');
+    } else {
+      game.lastMessage = routeCorrect ? '走位正確' : '成功避開，但未走到建議位置';
+      spawnImpact(laneCenter(actualLane), 426, false); playTone(routeCorrect ? 820 : 480, .08, 'sine');
+    }
+    game.strikeAnim = { strike: thisStrike, time: CONFIG.strikeAnimationSeconds, duration: CONFIG.strikeAnimationSeconds };
+    ui.modeFeedback.textContent = game.guessedPatternId ? `模式 ${game.guessedPatternId} 已鎖定；接下來依記憶走位。` : '本輪未在辨識倒數內選擇模式；答案將於回合結束後揭曉。';
+
+    if (index === 0) {
+      game.guessLocked = true;
+      game.state = 'gap'; game.timer = gapSeconds();
+      setStatus('第一次戳擊完成', `模式答案已鎖定；下一戳倒數 ${gapSeconds().toFixed(0)} 秒：依記憶走位`);
+    } else if (index === 1) {
+      game.state = 'gap'; game.timer = gapSeconds();
+      game.guessLocked = true;
+      setStatus('第二次戳擊完成', `下一戳倒數 ${gapSeconds().toFixed(0)} 秒：準備第三次戳擊`);
+    } else {
+      game.guessLocked = true;
+      finishRound();
+    }
+    renderAttackLog(); renderModeButtons(); updateLaneMap(); syncHud();
+  }
+
+  function finishRound() {
+    game.state = 'roundResult'; game.timer = CONFIG.roundResultSeconds;
+    const routeCorrectCount = game.strikeResults.filter((item) => item.routeCorrect).length;
+    const safeCount = game.strikeResults.filter((item) => item.physicalSafe).length;
+    const guessMade = Boolean(game.guessedPatternId);
+    const guessCorrect = guessMade && game.guessedPatternId === game.pattern.id;
+    game.currentRoundReview = {
+      round: game.round, patternId: game.pattern.id, patternLabel: game.pattern.label, crack: game.pattern.crack,
+      guess: game.guessedPatternId, guessMade, guessCorrect, routeCorrectCount, safeCount,
+      strikes: game.strikeResults.map((item) => ({ ...item })), allSafe: safeCount === 3
+    };
+    game.roundResults.push(game.currentRoundReview);
+    const route = game.pattern.strikes.map((s) => laneName(s.safe)).join(' → ');
+    if (ui.hintMode.value === 'guided') ui.modeFeedback.innerHTML = `本輪是 <strong>模式 ${game.pattern.id}</strong>；建議路線：<strong>${route}</strong>。`;
+    else ui.modeFeedback.textContent = `本輪答案是模式 ${game.pattern.id}；建議路線：${route}。`;
+    setStatus('本輪結束', `${safeCount}/3 次沒有受傷 · ${routeCorrectCount}/3 次走位符合建議路線`);
+    renderAttackLog(); renderModeButtons(); updateLaneMap(); syncHud();
+  }
+
+  function finishGame(failed = false) {
+    game.state = 'finished';
+    const rounds = game.roundResults;
+    const totalHits = rounds.reduce((sum, r) => sum + r.safeCount, 0);
+    const totalStrikes = rounds.length * 3;
+    const routeHits = rounds.reduce((sum, r) => sum + r.routeCorrectCount, 0);
+    const guessed = rounds.filter((r) => r.guessMade);
+    const correctGuesses = guessed.filter((r) => r.guessCorrect).length;
+    const survivalRate = totalStrikes ? Math.round(totalHits / totalStrikes * 100) : 0;
+    const routeRate = totalStrikes ? Math.round(routeHits / totalStrikes * 100) : 0;
+    const guessRate = guessed.length ? Math.round(correctGuesses / guessed.length * 100) : null;
+    showOverlay({
+      title: failed ? '生命耗盡，再挑戰一次' : '訓練完成！',
+      text: failed ? '本次練習因受傷耗盡生命而結束。可以依照以下紀錄，針對模式辨識或走位記憶重新訓練。' : '本次三連戳訓練已完成。可檢查模式辨識、實際存活及建議路線執行狀況。',
+      kicker: 'SESSION REVIEW',
+      actions: [
+        { label: '重新挑戰', className: 'button primary', onClick: () => { removeResultExtras(); startGame(); } },
+        { label: '查看最後一輪紀錄', className: 'button', onClick: () => { hideOverlay(); document.getElementById('attackLog').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } }
+      ]
+    });
+    const summary = document.createElement('div'); summary.className = 'overlay-results'; summary.id = 'resultSummary';
+    summary.innerHTML = `
+      <div class="overlay-result"><span>存活戳擊</span><strong>${survivalRate}%</strong></div>
+      <div class="overlay-result"><span>路線正確率</span><strong>${routeRate}%</strong></div>
+      <div class="overlay-result"><span>受傷次數</span><strong>${game.directHits}</strong></div>
+    `;
+    const guessLine = document.createElement('p');
+    guessLine.style.margin = '0 0 13px';
+    guessLine.textContent = guessRate === null
+      ? '模式辨識：本次沒有提交模式答案。下次可在開局辨識倒數期間選擇模式 A–G 或 H。'
+      : `模式辨識正確率：${guessRate}%（${correctGuesses}/${guessed.length} 次有作答的回合）。`;
+    const routeReview = document.createElement('div'); routeReview.className = 'route-review'; routeReview.id = 'routeReview';
+    const last = rounds[rounds.length - 1];
+    if (last) {
+      const routeRow = document.createElement('div'); routeRow.className = 'route-review-row';
+      const expected = last.strikes.map((s) => laneName(s.expectedLane)).join(' → ');
+      const actual = last.strikes.map((s) => laneName(s.actualLane)).join(' → ');
+      routeRow.innerHTML = `<strong>最後一輪：模式 ${last.patternId}</strong><br>建議路線：${expected}<br>實際站位：${actual}<br>${last.crack ? '有裂痕：站到蜘蛛腳落點接腳。' : '無裂痕：避開蜘蛛腳落點。'}`;
+      routeReview.appendChild(routeRow);
+    }
+    ui.overlayText.after(summary, guessLine, routeReview);
+    game._resultExtras = [summary, guessLine, routeReview];
+    setStatus('結算完成', `存活 ${survivalRate}% · 路線正確 ${routeRate}% · 受傷 ${game.directHits} 次`);
+    syncHud();
+  }
+  function removeResultExtras() { (game._resultExtras || []).forEach((node) => node.remove()); game._resultExtras = []; }
+
+  function pauseGame() {
+    if (['idle', 'finished', 'paused'].includes(game.state)) return;
+    game.previousState = game.state; game.state = 'paused';
+    setStatus('已暫停', '遊戲計時與攻擊流程已停止'); updateModeButtons();
+    showOverlay({
+      title: '練習暫停', text: '走位時間與蜘蛛腳攻擊已暫停。準備好後可繼續。', kicker: 'PAUSED',
+      actions: [
+        { label: '繼續練習', className: 'button primary', onClick: resumeGame },
+        { label: '重新開始', className: 'button', onClick: startGame },
+        { label: '結束練習', className: 'button danger', onClick: () => finishGame(false) }
+      ]
+    });
+  }
+  function resumeGame() {
+    if (game.state !== 'paused') return;
+    game.state = game.previousState || 'gap'; hideOverlay();
+    setStatus(stateLabel(game.state), stateMessage(game.state)); updateModeButtons(); canvas.focus({ preventScroll: true });
+  }
+  function stateLabel(state) {
+    return ({ firstWarning: '觀察首戳線索', gap: `${game.strikeIndex + 1} 次戳擊完成`, roundResult: '本輪結果', paused: '已暫停', finished: '訓練結束' })[state] || '等待開始';
+  }
+  function stateMessage(state) {
+    return ({ firstWarning: '觀察上下排蜘蛛腳與地面裂痕', gap: '依辨識出的模式記住下一個走位', roundResult: '查看這輪模式和走位結果' })[state] || '等待開始練習';
+  }
+
+  function update(dt) {
+    if (dt > 0.05) dt = 0.05;
+    game.elapsed += dt;
+    if (game.shake > 0) game.shake = Math.max(0, game.shake - dt);
+    if (game.strikeAnim) { game.strikeAnim.time -= dt; if (game.strikeAnim.time <= 0) game.strikeAnim = null; }
+    updateParticles(dt);
+    if (game.state === 'paused' || game.state === 'idle' || game.state === 'finished') return;
+    updatePlayer(dt);
+    if (game.state === 'firstWarning') {
+      game.timer -= dt;
+      if (game.timer <= 0) performStrike(0);
+    } else if (game.state === 'gap') {
+      game.timer -= dt;
+      if (game.timer <= 0) {
+        if (game.strikeIndex < 2) performStrike(game.strikeIndex + 1);
+        else finishRound();
+      }
+    } else if (game.state === 'roundResult') {
+      game.timer -= dt;
+      if (game.timer <= 0) {
+        if (game.lives <= 0) finishGame(true);
+        else if (game.round >= game.roundTotal) finishGame(false);
+        else startRound();
+      }
+    }
+    syncHud(); updateModeButtons();
+  }
+
+  function updatePlayer(dt) {
+    const left = keys.has('ArrowLeft') || keys.has('a') || keys.has('A') || touch.left;
+    const right = keys.has('ArrowRight') || keys.has('d') || keys.has('D') || touch.right;
+    let dir = 0;
+    if (left && !right) dir = -1;
+    if (right && !left) dir = 1;
+    game.playerMoving = dir !== 0;
+    if (dir) {
+      game.playerX += dir * CONFIG.moveSpeed * dt;
+      game.playerX = Math.max(64, Math.min(936, game.playerX));
+      game.playerFacing = dir; game.runClock += dt;
+    }
+    if (game.pattern && game.state === 'gap' && game.strikeIndex >= 0 && game.strikeIndex < 2) {
+      const next = game.pattern.strikes[game.strikeIndex + 1];
+      if (laneAtX(game.playerX) === next.safe) {
+        if (game._targetReachedForStrike !== game.strikeIndex + 1) {
+          game._targetReachedForStrike = game.strikeIndex + 1;
+          next._firstReachedAt = gapSeconds() - game.timer;
+        }
+      }
+    }
+  }
+  function updateParticles(dt) {
+    game.particles = game.particles.filter((p) => { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .985; p.vy += 90 * dt; return p.life > 0; });
+  }
+
+  function syncHud() {
+    ui.round.textContent = `${Math.min(game.round, game.roundTotal || Number(ui.roundCount.value))} / ${game.roundTotal || Number(ui.roundCount.value)}`;
+    ui.strikes.textContent = `${Math.max(0, game.strikeIndex + 1)} / 3`;
+    if (game.state === 'firstWarning') ui.timer.textContent = `首戳 ${Math.max(0, game.timer).toFixed(1)}s`;
+    else if (game.state === 'gap') ui.timer.textContent = `${Math.max(0, game.timer).toFixed(1)}s`;
+    else ui.timer.textContent = '—';
+    ui.lives.textContent = Array.from({ length: CONFIG.startLives }, (_, i) => i < game.lives ? '♥' : '♡').join(' ');
+    if (game.pattern && !['idle','finished'].includes(game.state)) {
+      ui.phase.textContent = game.pattern.crack ? '地板有裂痕' : '地板無裂痕';
+      ui.phase.classList.toggle('crack-status', game.pattern.crack);
+    } else {
+      ui.phase.textContent = stateLabel(game.state); ui.phase.classList.remove('crack-status');
+    }
+  }
+
+  function currentShownStrike() {
+    if (!game.pattern) return null;
+    if (game.state === 'firstWarning') return game.pattern.strikes[0];
+    if (game.strikeAnim) return game.strikeAnim.strike;
+    if (game.state === 'gap' && game.strikeIndex < 2 && game.timer <= 0.85 && ui.hintMode.value === 'guided') return game.pattern.strikes[game.strikeIndex + 1];
+    if (game.state === 'roundResult' && game.strikeIndex >= 0) return game.pattern.strikes[game.strikeIndex];
+    return null;
+  }
+  function updateLaneMap() {
+    const shown = currentShownStrike();
+    const footPositions = shown ? [...shown.top, ...shown.bottom].map((coord) => Math.round(coord * 100) / 100) : [];
+    const expected = game.pattern && game.state !== 'idle' && game.state !== 'finished' && game.state !== 'paused'
+      ? (game.state === 'firstWarning' ? 3 : (game.state === 'gap' && game.strikeIndex < 2 ? game.pattern.strikes[game.strikeIndex + 1].safe : game.pattern.strikes[Math.max(0, game.strikeIndex)].safe)) : null;
+    const signature = [laneAtX(game.playerX), game.state, game.strikeIndex, expected, ui.hintMode.value, footPositions.join(',')].join('|');
+    if (ui.laneMap.dataset.renderSignature === signature) return;
+    ui.laneMap.dataset.renderSignature = signature;
+    ui.laneMap.replaceChildren();
+    for (let i = 0; i < 7; i++) {
+      const chip = document.createElement('div'); chip.className = 'lane-chip';
+      if (footPositions.includes(i)) chip.classList.add('foot');
+      if (laneAtX(game.playerX) === i) chip.classList.add('player');
+      if (ui.hintMode.value === 'guided' && expected === i) chip.classList.add('expected');
+      const name = document.createElement('span'); name.textContent = ['左外','左二','左中','中央','右中','右二','右外'][i];
+      const mark = document.createElement('span'); mark.className = 'lane-mark';
+      const markers = [];
+      if (shown && footTouchesLane(shown.top, i)) markers.push('上腳');
+      if (shown && footTouchesLane(shown.bottom, i)) markers.push('下腳');
+      if (laneAtX(game.playerX) === i) markers.push('你');
+      if (ui.hintMode.value === 'guided' && expected === i) markers.push('目標');
+      mark.textContent = markers.join('·') || '—';
+      chip.append(name, mark); chip.title = `區域 ${i + 1}：${markers.join('、') || '無標記'}`;
+      ui.laneMap.appendChild(chip);
+    }
+  }
+
+  function renderAttackLog() {
+    ui.attackLog.replaceChildren();
+    if (!game.strikeResults.length) {
+      const empty = document.createElement('div'); empty.className = 'empty-log';
+      empty.textContent = '第一戳會提供模式線索。每次戳擊後會記錄是否成功避開。';
+      ui.attackLog.appendChild(empty); return;
+    }
+    game.strikeResults.forEach((result) => {
+      const row = document.createElement('div'); row.className = 'log-row';
+      const left = document.createElement('div');
+      const title = document.createElement('span'); title.className = 'log-name'; title.textContent = `第 ${result.index + 1} 次戳擊`;
+      const detail = document.createElement('span'); detail.className = 'log-detail'; detail.textContent = `實際位置：${laneName(result.actualLane)}`;
+      left.append(title, detail);
+      const status = document.createElement('strong');
+      status.className = result.physicalSafe ? 'status-good' : 'status-miss';
+      status.textContent = result.physicalSafe ? (result.routeCorrect ? '走位正確' : '成功存活') : (result.noDeduct ? '受擊不扣血' : '受到傷害');
+      row.append(left, status);
+      if (game.state === 'roundResult' || game.state === 'finished') {
+        const detail2 = document.createElement('div'); detail2.className = 'log-detail';
+        detail2.style.gridColumn = '1 / -1'; detail2.textContent = `建議位置：${laneName(result.expectedLane)} · ${result.routeCorrect ? '符合模式路線' : '與建議路線不同'}`;
+        row.appendChild(detail2);
+      }
+      ui.attackLog.appendChild(row);
+    });
+    if (game.state === 'roundResult' && game.currentRoundReview) {
+      const review = document.createElement('div'); review.className = 'empty-log';
+      const guess = game.currentRoundReview.guessMade ? `模式判斷 ${game.currentRoundReview.guessCorrect ? '正確' : '錯誤'}（${game.currentRoundReview.guess} → ${game.pattern.id}）` : `正確模式為 ${game.pattern.id}（未作答）`;
+      review.textContent = `${guess}。建議路線：${game.pattern.strikes.map((s) => laneName(s.safe)).join(' → ')}`;
+      ui.attackLog.appendChild(review);
+    }
+  }
+
+  // ============================================================
+  // 2. Canvas 繪圖：自製鏡界、上下蜘蛛腳、裂痕與角色
+  // ============================================================
+  function draw() {
+    ctx.clearRect(0, 0, CONFIG.width, CONFIG.height);
+    ctx.save();
+    if (game.shake > 0) {
+      const amount = Math.min(7, game.shake * 22);
+      ctx.translate((Math.random() - .5) * amount, (Math.random() - .5) * amount);
+    }
+    drawBackground(); drawArena(); drawCracks(); drawLaneHints(); drawSpiderLegs(); drawPlayer(); drawParticles(); drawSceneText();
+    ctx.restore();
+    updateLaneMap();
+  }
+  function drawBackground() {
+    if (assets.background) ctx.drawImage(assets.background, 0, 0, CONFIG.width, CONFIG.height);
+    else {
+      const gradient = ctx.createLinearGradient(0, 0, 0, CONFIG.height);
+      gradient.addColorStop(0,'#17102a'); gradient.addColorStop(.55,'#25203d'); gradient.addColorStop(1,'#0c0915');
+      ctx.fillStyle = gradient; ctx.fillRect(0,0,CONFIG.width,CONFIG.height);
+    }
+    for (let i=0;i<23;i++) {
+      const x=(i*149+game.elapsed*(7+i%4))%CONFIG.width;
+      const y=38+(i*79%255)+Math.sin(game.elapsed*.4+i)*7;
+      ctx.fillStyle=`rgba(190,171,255,${.07+(i%4)*.025})`;
+      ctx.beginPath(); ctx.arc(x,y,1+(i%3)*.45,0,Math.PI*2); ctx.fill();
+    }
+    const vignette=ctx.createRadialGradient(500,280,150,500,280,600);
+    vignette.addColorStop(0,'rgba(7,4,15,0)'); vignette.addColorStop(1,'rgba(5,3,12,.55)');
+    ctx.fillStyle=vignette; ctx.fillRect(0,0,CONFIG.width,CONFIG.height);
+  }
+  function drawArena() {
+    const floor=ctx.createLinearGradient(0,290,0,535);
+    floor.addColorStop(0,'rgba(50,43,73,.95)'); floor.addColorStop(.5,'rgba(36,31,55,.98)'); floor.addColorStop(1,'rgba(16,13,26,.99)');
+    ctx.beginPath(); ctx.moveTo(91,288); ctx.lineTo(909,288); ctx.lineTo(982,522); ctx.lineTo(18,522); ctx.closePath();
+    ctx.fillStyle=floor; ctx.fill(); ctx.strokeStyle='rgba(189,166,255,.36)'; ctx.lineWidth=1.4; ctx.stroke();
+    for(let row=1;row<=4;row++){
+      const t=row/5,y=288+t*234,left=91-t*73,right=909+t*73;
+      ctx.strokeStyle=`rgba(166,148,203,${.14-t*.025})`;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();
+    }
+    for(let i=1;i<CONFIG.laneCount;i++){
+      const ratio=i/CONFIG.laneCount,xTop=91+ratio*818,xBottom=18+ratio*964;
+      ctx.strokeStyle='rgba(179,160,218,.18)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(xTop,288);ctx.lineTo(xBottom,522);ctx.stroke();
+    }
+    ctx.strokeStyle='rgba(151,120,224,.18)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(110,302);ctx.lineTo(890,302);ctx.stroke();
+  }
+  function drawCracks() {
+    if (!game.pattern?.crack || ['idle','finished'].includes(game.state)) return;
+    ctx.save(); ctx.globalAlpha = game.state === 'roundResult' ? .58 : .4;
+    if (assets.crack) {
+      [0,1,2,4,5,6].forEach((i, n) => {
+        const x=laneCenter(i)+(n%2?10:-8),y=360+(n%3)*22;
+        ctx.drawImage(assets.crack,x-48,y-40,96,82);
+      });
+    }
+    ctx.strokeStyle=`rgba(113,208,221,${.45+Math.sin(game.elapsed*4)*.06})`;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(295,310);ctx.lineTo(326,351);ctx.lineTo(309,385);ctx.lineTo(343,406);ctx.lineTo(353,442);
+    ctx.moveTo(690,318);ctx.lineTo(664,348);ctx.lineTo(681,379);ctx.lineTo(652,405);ctx.lineTo(640,444);ctx.stroke();
+    ctx.restore();
+  }
+  function drawLaneHints() {
+    if (!game.pattern || game.state === 'idle' || game.state === 'finished') return;
+    const shown=currentShownStrike(); if(!shown) return;
+    for(let i=0;i<7;i++){
+      const x=laneCenter(i), topLane=footTouchesLane(shown.top, i), botLane=footTouchesLane(shown.bottom, i);
+      if(!topLane&&!botLane) continue;
+      ctx.save(); ctx.strokeStyle='rgba(255,119,155,.62)';ctx.lineWidth=2;ctx.setLineDash([7,6]);
+      ctx.beginPath();ctx.moveTo(x,300);ctx.lineTo(x,492);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle='rgba(255,109,141,.11)';ctx.beginPath();ctx.ellipse(x,428,36,12,0,0,Math.PI*2);ctx.fill();ctx.restore();
+    }
+    if (ui.hintMode.value === 'guided') {
+      const expected = game.state === 'firstWarning' ? 3 : (game.state === 'gap' && game.strikeIndex < 2 ? game.pattern.strikes[game.strikeIndex+1].safe : game.pattern.strikes[Math.max(0,game.strikeIndex)].safe);
+      const x=laneCenter(expected);
+      ctx.save();ctx.strokeStyle='#f6c979';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.beginPath();ctx.ellipse(x,464,35,10,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle='#ffe5a3';ctx.font='bold 12px "Microsoft JhengHei",sans-serif';ctx.textAlign='center';ctx.fillText('建議位置',x,500);ctx.restore();
+    }
+  }
+  function drawSpiderLegs() {
+    const preview=currentShownStrike();
+    if (preview) {
+      const warning = !game.strikeAnim;
+      const progress = game.strikeAnim ? 1-Math.max(0,game.strikeAnim.time)/game.strikeAnim.duration : 0;
+      preview.top.forEach((index) => drawLeg(index,'top',warning,progress));
+      preview.bottom.forEach((index) => drawLeg(index,'bottom',warning,progress));
+    }
+  }
+  function drawLeg(index, side, warning, progress) {
+    const x=footX(index),w=76,h=235;
+    let alpha=warning ? .66 : 1;
+    let y;
+    if(side==='top') y=warning ? 34+Math.sin(game.elapsed*7+index)*3 : 24+progress*112;
+    else y=warning ? 635+Math.sin(game.elapsed*7+index)*3 : 635-progress*68;
+    if (assets.spiderLeg) {
+      ctx.save();ctx.globalAlpha=alpha;
+      if(side==='top') ctx.drawImage(assets.spiderLeg,x-w/2,y,w,h);
+      else {ctx.translate(x,y);ctx.scale(1,-1);ctx.drawImage(assets.spiderLeg,-w/2,0,w,h);}
+      ctx.restore();
+    } else drawFallbackLeg(x,y,side,warning,progress);
+    if(warning){
+      ctx.save();ctx.strokeStyle=`rgba(255,109,141,${.28+Math.sin(game.elapsed*12+index)*.1})`;ctx.lineWidth=1.5;ctx.setLineDash([5,6]);
+      ctx.beginPath();ctx.moveTo(x,side==='top'?245:318);ctx.lineTo(x,side==='top'?376:464);ctx.stroke();ctx.setLineDash([]);ctx.restore();
+    }
+  }
+  function drawFallbackLeg(x,y,side,warning,progress){
+    ctx.save();ctx.translate(x,y);if(side==='bottom')ctx.scale(1,-1);
+    ctx.globalAlpha=warning?.7:1;ctx.strokeStyle='#4b365e';ctx.lineWidth=17;ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-10,55);ctx.lineTo(17,106);ctx.lineTo(-6,160);ctx.lineTo(13,208);ctx.stroke();
+    ctx.strokeStyle='#a88ae5';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-10,55);ctx.lineTo(17,106);ctx.lineTo(-6,160);ctx.lineTo(13,208);ctx.stroke();ctx.restore();
+  }
+  function drawPlayer() {
+    const x=game.playerX,y=458;
+    if (game.strikeAnim && game.strikeAnim.time > .13 && game.strikeResults.at(-1)?.damaged && Math.floor(game.elapsed*22)%2===0) return;
+    const frames=assets.runFrames||[];let sprite=assets.idle;
+    if(game.playerMoving&&frames.length)sprite=frames[Math.floor(game.runClock/.11)%frames.length];
+    if(game.strikeResults.at(-1)?.damaged&&assets.hurt&&game.strikeAnim)sprite=assets.hurt;
+    if(sprite){
+      const targetH=88,targetW=targetH*sprite.width/sprite.height;
+      ctx.save();if(game.playerFacing<0){ctx.translate(x,0);ctx.scale(-1,1);ctx.translate(-x,0);}ctx.drawImage(sprite,x-targetW/2,y-targetH+8,targetW,targetH);ctx.restore();
+    }else drawPlaceholderCharacter(x,y,game.playerFacing,game.playerMoving);
+    ctx.save();ctx.strokeStyle='rgba(102,217,232,.7)';ctx.lineWidth=1.4;ctx.beginPath();ctx.ellipse(x,472,23,7,0,0,Math.PI*2);ctx.stroke();ctx.restore();
+  }
+  function drawPlaceholderCharacter(x,y,facing,moving){
+    const step=moving?Math.sin(game.runClock*17)*6:0;ctx.save();ctx.translate(x,y);if(facing<0)ctx.scale(-1,1);
+    ctx.fillStyle='rgba(0,0,0,.36)';ctx.beginPath();ctx.ellipse(0,-1,23,7,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#45305f';ctx.beginPath();ctx.moveTo(-12,-61);ctx.lineTo(7,-64);ctx.lineTo(19,-14);ctx.lineTo(4,-20);ctx.lineTo(-5,-42);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#9c7cdf';ctx.beginPath();ctx.moveTo(-13,-57);ctx.lineTo(10,-58);ctx.lineTo(8,-27);ctx.lineTo(-9,-27);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#d7b6ff';ctx.fillRect(-8,-73,19,20);ctx.fillStyle='#30243f';ctx.fillRect(-10,-77,22,10);ctx.fillRect(3,-73,14,5);
+    ctx.fillStyle='#211a30';ctx.fillRect(-7,-30,7,23+step);ctx.fillRect(2,-30,7,23-step);
+    ctx.fillStyle='#9edee8';ctx.fillRect(-8,-8+step,10,5);ctx.fillRect(2,-8-step,10,5);
+    ctx.strokeStyle='#c1a4ff';ctx.lineWidth=4;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-11,-49);ctx.lineTo(-20,-32-step*.4);ctx.moveTo(9,-49);ctx.lineTo(17,-37+step*.4);ctx.stroke();ctx.restore();
+  }
+  function drawParticles(){game.particles.forEach((p)=>{ctx.save();ctx.globalAlpha=Math.max(0,p.life/p.maxLife);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();ctx.restore();});}
+  function drawSceneText(){
+    if(game.state==='firstWarning'){
+      // 不在場景中央放大面板，避免遮住辨識模式所需的蜘蛛腳形狀。
+      ctx.save();ctx.textAlign='center';ctx.fillStyle='#ffe3a0';ctx.shadowColor='rgba(8,5,15,.95)';ctx.shadowBlur=5;
+      ctx.font='bold 14px \"Microsoft JhengHei\",sans-serif';ctx.fillText('辨識首戳：上下腳位＋地面裂痕',500,282);ctx.restore();
+    }else if(game.state==='gap'){
+      ctx.save();ctx.textAlign='center';ctx.fillStyle='#ffe3a0';ctx.shadowColor='rgba(8,5,15,.95)';ctx.shadowBlur=5;
+      ctx.font='bold 14px \"Microsoft JhengHei\",sans-serif';ctx.fillText(`距離第 ${game.strikeIndex+2} 戳`,500,282);ctx.restore();
+    }else if(game.state==='roundResult'&&game.currentRoundReview){
+      const review=game.currentRoundReview;ctx.save();ctx.textAlign='center';ctx.font='900 26px "Microsoft JhengHei",sans-serif';
+      const perfect=review.safeCount===3&&review.routeCorrectCount===3;
+      ctx.fillStyle=perfect?'#a8ffe8':'#ffcf8e';ctx.shadowColor=perfect?'#4ddcb7':'#ffad60';ctx.shadowBlur=16;
+      ctx.fillText(perfect?'三次走位正確':`${review.safeCount}/3 次成功避傷`,500,225);ctx.shadowBlur=0;
+      ctx.font='bold 16px "Microsoft JhengHei",sans-serif';ctx.fillText(`模式 ${review.patternId} · 建議路線 ${review.strikes.map(s=>laneName(s.expectedLane)).join(' → ')}`,500,254);ctx.restore();
+    }
+  }
+  function roundedRect(context,x,y,width,height,radius){const r=Math.min(radius,width/2,height/2);context.beginPath();context.moveTo(x+r,y);context.arcTo(x+width,y,x+width,y+height,r);context.arcTo(x+width,y+height,x,y+height,r);context.arcTo(x,y+height,x,y,r);context.arcTo(x,y,x+width,y,r);context.closePath();}
+  function spawnImpact(x,y,hurt=false){for(let i=0;i<(hurt?18:10);i++){const a=Math.random()*Math.PI*2,s=35+Math.random()*150;game.particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-25,life:.35+Math.random()*.45,maxLife:.8,size:2+Math.random()*4,color:hurt?'#ff7899':(Math.random()>.5?'#9f89f4':'#7ddcc5')});}}
+  function playTone(frequency,duration,type='sine'){
+    if(!soundEnabled)return;
+    try{audioContext ||= new (window.AudioContext||window.webkitAudioContext)();if(audioContext.state==='suspended')audioContext.resume();const osc=audioContext.createOscillator(),gain=audioContext.createGain();osc.type=type;osc.frequency.value=frequency;gain.gain.setValueAtTime(.035,audioContext.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audioContext.currentTime+duration);osc.connect(gain);gain.connect(audioContext.destination);osc.start();osc.stop(audioContext.currentTime+duration);}catch(err){console.warn('無法播放提示音',err);}
+  }
+
+  // ============================================================
+  // 3. 操作與初始化
+  // ============================================================
+  function setMove(direction,down){touch[direction]=down;if(down)canvas.focus({preventScroll:true});}
+  function bindTouch(button,direction){button.addEventListener('pointerdown',(event)=>{event.preventDefault();button.setPointerCapture?.(event.pointerId);setMove(direction,true);});['pointerup','pointercancel','lostpointercapture','pointerleave'].forEach((type)=>button.addEventListener(type,()=>setMove(direction,false)));}
+  document.addEventListener('keydown',(event)=>{
+    const key=event.key;
+    if(['ArrowLeft','ArrowRight',' '].includes(key))event.preventDefault();
+    if(event.repeat&&['p','P','Escape','r','R'].includes(key))return;
+    if(/^[0-9]$/.test(key)&&game.patternPool.length){
+      const idx=key==='0'?9:Number(key)-1;const selected=game.patternPool[idx];
+      if(selected){chooseGuess(selected.id);return;}
+      if(key==='0')return;
+    }
+    keys.add(key);
+    if(key==='p'||key==='P'||key==='Escape'){if(game.state==='paused')resumeGame();else pauseGame();}
+    else if((key==='r'||key==='R')&&!['idle','finished'].includes(game.state)){removeResultExtras();startGame();}
+  });
+  document.addEventListener('keyup',(event)=>keys.delete(event.key));
+  window.addEventListener('blur',()=>{keys.clear();touch.left=false;touch.right=false;if(!['idle','finished','paused'].includes(game.state))pauseGame();});
+  bindTouch(ui.touchLeft,'left');bindTouch(ui.touchRight,'right');
+  canvas.addEventListener('pointerdown',(event)=>{
+    if(['idle','paused','finished'].includes(game.state))return;
+    const rect=canvas.getBoundingClientRect();const x=(event.clientX-rect.left)*CONFIG.width/rect.width;const y=(event.clientY-rect.top)*CONFIG.height/rect.height;
+    if(y>320&&y<525){game.playerX=Math.max(64,Math.min(936,x));game.playerFacing=game.playerX<laneCenter(laneAtX(game.playerX))?-1:1;}
+  });
+
+  ui.overlayStart.addEventListener('click',()=>{removeResultExtras();startGame();});
+  ui.startBtn.addEventListener('click',()=>{
+    if(!['idle','finished'].includes(game.state)&&!confirm('目前挑戰會重設，確定重新開始嗎？'))return;
+    removeResultExtras();startGame();
+  });
+  ui.restartBtn.addEventListener('click',()=>{removeResultExtras();startGame();});
+  ui.pauseBtn.addEventListener('click',()=>{if(game.state==='paused')resumeGame();else pauseGame();});
+  [ui.patternSet,ui.roundCount,ui.difficulty,ui.sequenceMode,ui.hintMode].forEach((select)=>select.addEventListener('change',()=>{
+    if(['idle','finished'].includes(game.state)){game.patternPool=poolForSetting();renderModeButtons();syncHud();}
+    else showToast('設定將在下一次挑戰生效。');
+    if(select===ui.hintMode){updateLaneMap();renderAttackLog();}
+  }));
+  ui.soundBtn.addEventListener('click',()=>{soundEnabled=!soundEnabled;ui.soundBtn.setAttribute('aria-pressed',String(soundEnabled));ui.soundBtn.textContent=soundEnabled?'♫':'♪̸';showToast(soundEnabled?'提示音已開啟':'提示音已關閉');if(soundEnabled)playTone(660,.08);});
+  ui.fullscreenBtn.addEventListener('click',async()=>{
+    const panel=ui.gamePanel;
+    if(document.fullscreenElement){await document.exitFullscreen().catch(()=>{});panel.classList.remove('fake-fullscreen');document.body.classList.remove('fullscreen-mode');return;}
+    if(panel.requestFullscreen){try{await panel.requestFullscreen();return;}catch(err){console.warn('原生全螢幕不可用，改用版面放大',err);}}
+    panel.classList.toggle('fake-fullscreen');document.body.classList.toggle('fullscreen-mode',panel.classList.contains('fake-fullscreen'));
+  });
+  document.addEventListener('fullscreenchange',()=>{const active=Boolean(document.fullscreenElement);ui.fullscreenBtn.textContent=active?'⤢':'⛶';ui.fullscreenBtn.title=active?'離開全螢幕':'放大遊戲畫面';});
+  document.addEventListener('keydown',(event)=>{if(event.key==='Escape'&&!document.fullscreenElement&&ui.gamePanel.classList.contains('fake-fullscreen')){ui.gamePanel.classList.remove('fake-fullscreen');document.body.classList.remove('fullscreen-mode');}});
+
+  function loop(timestamp){if(!lastFrame)lastFrame=timestamp;const dt=Math.max(0,(timestamp-lastFrame)/1000);lastFrame=timestamp;update(dt);draw();frameId=requestAnimationFrame(loop);}
+  async function init(){game.patternPool=poolForSetting();renderModeButtons();updateLaneMap();syncHud();await loadAssets();if(!assets.background)console.warn('背景素材未載入，使用 Canvas 備援背景');if(!assets.spiderLeg)console.warn('蜘蛛腳素材未載入，使用 Canvas 備援圖形');if(frameId)cancelAnimationFrame(frameId);frameId=requestAnimationFrame(loop);}
+  init();
+})();
+</script>
+</body>
+</html>
